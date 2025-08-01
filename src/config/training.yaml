@@ -1,0 +1,46 @@
+TRAINING_KWARGS:
+  num_train_epochs: 10
+  fp16: false 
+  bf16: true 
+  warmup_ratio: 0.05
+  lr_scheduler_type: cosine # _with_restarts
+  #lr_scheduler_kwargs:
+  #  num_cycles: 2
+  optim: adamw_8bit
+
+GEMMA_4_TRAINING_KWARGS:
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  device_batch_size: 32 
+
+GEMMA_12_TRAINING_KWARGS:
+  learning_rate: 0.00005
+  weight_decay: 0.01
+  device_batch_size: 64 
+
+LLAMA_TRAINING_KWARGS:
+  learning_rate: 0.0001 
+  weight_decay: 0.001
+  device_batch_size: 64
+
+CKP_GEMMA_4_TRAINING_KWARGS:
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  device_batch_size: 32
+
+CKP_GEMMA_12_TRAINING_KWARGS:
+  learning_rate: 0.00001 
+  weight_decay: 0.001
+  device_batch_size: 64
+
+CKP_LLAMA_TRAINING_KWARGS:
+  learning_rate: 0.000005
+  weight_decay: 0.001
+  device_batch_size: 64
+
+CALLBACK_KWARGS:
+  min_epochs: 1
+  early_stopping_patience: 5 # 5
+  early_stopping_threshold: 0.001 # 0.001
+
+SEED: 42

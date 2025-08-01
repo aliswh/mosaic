@@ -1,0 +1,578 @@
+mimic:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+mimic_spanish:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_spanish
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+mimic_french:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_french
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+mimic_danish:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_danish
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+mimic_translated:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+
+
+mimic_a:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_a
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+mimic_translated_v1:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated_v1_fixed
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+
+mimic_translated_v2:
+  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated_v2_fixed
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+
+chexpert:
+  path: /staff/aliceschiavone/data/mcxr_data/chexpert
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+  language: English
+
+padchest:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+  language: Spanish
+
+padchest_mostfreq:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_mostfreq
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'aortic atheromatosis', 'aortic elongation',
+    'apical pleural thickening', 'cardiomegaly', 'chronic changes',
+    'costophrenic angle blunting', 'fibrotic band', 'infiltrates',
+    'interstitial pattern', 'laminar atelectasis', 'pleural effusion',
+    'scoliosis', 'vascular hilar enlargement',
+    'vertebral degenerative changes'
+  ]
+  language: Spanish
+
+padchest_EN:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+  language: English
+
+padchest_EN_mostfreq:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN_mostfreq
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'aortic atheromatosis', 'aortic elongation',
+    'apical pleural thickening', 'cardiomegaly', 'chronic changes',
+    'costophrenic angle blunting', 'fibrotic band', 'infiltrates',
+    'interstitial pattern', 'laminar atelectasis', 'pleural effusion',
+    'scoliosis', 'vascular hilar enlargement',
+    'vertebral degenerative changes'
+  ]
+  language: Spanish
+
+padchest_translated_v1:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_translated_v1_fixed
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+
+padchest_translated_v2:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_translated_v2_fixed
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+
+padchest_EN_mostfreq_translated:
+  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN_mostfreq_translated
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'aortic atheromatosis', 'aortic elongation',
+    'apical pleural thickening', 'cardiomegaly', 'chronic changes',
+    'costophrenic angle blunting', 'fibrotic band', 'infiltrates',
+    'interstitial pattern', 'laminar atelectasis', 'pleural effusion',
+    'scoliosis', 'vascular hilar enlargement',
+    'vertebral degenerative changes'
+  ]
+
+casia:
+  path: /staff/aliceschiavone/data/mcxr_data/casia
+  classes: [-1, 1]
+  findings: [
+    'cardiomegaly', 'mass', 'pleuraleffusion',
+    'pneumonia', 'pneumothorax'
+  ]
+  language: French
+
+casia_translated:
+  path: /staff/aliceschiavone/data/mcxr_data/casia_translated
+  classes: [-1, 1]
+  findings: [
+    'cardiomegaly', 'mass', 'pleuraleffusion',
+    'pneumonia', 'pneumothorax'
+  ]
+  language: French
+
+danskcxr:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr
+  classes: [-1, 1, 2]
+  findings: [
+    'Abscess', 'Aneurysm', 'Asbestosis',
+    'Aspergillosis', 'Atelectasis', 'Cardiomegaly', 
+    'CavitaryLesion', 'ChronicLungChanges', 'Consolidation',
+    'CorrectPlacement', 'CystBullae', 'DiffuseInfiltrate',
+    'ElevatedHemidiaphragm', 'Emphysema', 'EnlargedMediastinum',
+    'Fibrosis', 'FlattenedDiaphragm', 'FocalInfiltrate',
+    'Fracture', 'HiatusHernia', 'IncreasedInterstitial',
+    'Infiltrate', 'InterlobarThickening', 'LungDecreasedTranslucency',
+    'LungIncreasedTranslucency', 'LungSurgery', 'LymphNodePathology',
+    'MalignantCancer', 'MediastinalShift', 'MediastinalTumor',
+    'NoduleTumorMass', 'NotCorrectPlacement', 'OperationImplants',
+    'PericardialEffusion', 'PleuralCalcification', 'PleuralChanges',
+    'PleuralContraction', 'PleuralEffusion', 'PleuralThickening',
+    'Pneumomediastinum', 'PneumoniaInfection', 'Pneumothorax',
+    'Sarcoidosis', 'StasisEdema', 'SubcutaneousEmphysema',
+    'SupportDevices', 'Tuberculosis', 'VascularChanges'
+  ]
+  language: Danish
+
+danskcxr_EN:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_EN
+  classes: [-1, 1, 2]
+  findings: [
+    'Abscess', 'Aneurysm', 'Asbestosis',
+    'Aspergillosis', 'Atelectasis', 'Cardiomegaly', 
+    'CavitaryLesion', 'ChronicLungChanges', 'Consolidation',
+    'CorrectPlacement', 'CystBullae', 'DiffuseInfiltrate',
+    'ElevatedHemidiaphragm', 'Emphysema', 'EnlargedMediastinum',
+    'Fibrosis', 'FlattenedDiaphragm', 'FocalInfiltrate',
+    'Fracture', 'HiatusHernia', 'IncreasedInterstitial',
+    'Infiltrate', 'InterlobarThickening', 'LungDecreasedTranslucency',
+    'LungIncreasedTranslucency', 'LungSurgery', 'LymphNodePathology',
+    'MalignantCancer', 'MediastinalShift', 'MediastinalTumor',
+    'NoduleTumorMass', 'NotCorrectPlacement', 'OperationImplants',
+    'PericardialEffusion', 'PleuralCalcification', 'PleuralChanges',
+    'PleuralContraction', 'PleuralEffusion', 'PleuralThickening',
+    'Pneumomediastinum', 'PneumoniaInfection', 'Pneumothorax',
+    'Sarcoidosis', 'StasisEdema', 'SubcutaneousEmphysema',
+    'SupportDevices', 'Tuberculosis', 'VascularChanges'
+  ]
+  language: English
+
+danskcxr_mostfreq:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_mostfreq
+  classes: [-1, 1, 2]
+  findings: [
+    'Atelectasis', 'Cardiomegaly', 'ChronicLungChanges', 
+    'Consolidation', 'Fracture', 'IncreasedInterstitial', 
+    'Infiltrate', 'LungDecreasedTranslucency', 'NoduleTumorMass', 
+    'PleuralEffusion', 'PneumoniaInfection', 'Pneumothorax', 
+    'StasisEdema', 'SupportDevices'
+  ]
+  language: Danish
+
+danskcxr_mostfreq_translated:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_mostfreq_translated
+  classes: [-1, 1, 2]
+  findings: [
+    'Atelectasis', 'Cardiomegaly', 'ChronicLungChanges', 
+    'Consolidation', 'Fracture', 'IncreasedInterstitial', 
+    'Infiltrate', 'LungDecreasedTranslucency', 'NoduleTumorMass', 
+    'PleuralEffusion', 'PneumoniaInfection', 'Pneumothorax', 
+    'StasisEdema', 'SupportDevices'
+  ]
+  language: Danish
+
+danskcxr_translated:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_translated
+  classes: [-1, 1, 2]
+  findings: [
+    'Abscess', 'Aneurysm', 'Asbestosis',
+    'Aspergillosis', 'Atelectasis', 'Cardiomegaly', 
+    'CavitaryLesion', 'ChronicLungChanges', 'Consolidation',
+    'CorrectPlacement', 'CystBullae', 'DiffuseInfiltrate',
+    'ElevatedHemidiaphragm', 'Emphysema', 'EnlargedMediastinum',
+    'Fibrosis', 'FlattenedDiaphragm', 'FocalInfiltrate',
+    'Fracture', 'HiatusHernia', 'IncreasedInterstitial',
+    'Infiltrate', 'InterlobarThickening', 'LungDecreasedTranslucency',
+    'LungIncreasedTranslucency', 'LungSurgery', 'LymphNodePathology',
+    'MalignantCancer', 'MediastinalShift', 'MediastinalTumor',
+    'NoduleTumorMass', 'NotCorrectPlacement', 'OperationImplants',
+    'PericardialEffusion', 'PleuralCalcification', 'PleuralChanges',
+    'PleuralContraction', 'PleuralEffusion', 'PleuralThickening',
+    'Pneumomediastinum', 'PneumoniaInfection', 'Pneumothorax',
+    'Sarcoidosis', 'StasisEdema', 'SubcutaneousEmphysema',
+    'SupportDevices', 'Tuberculosis', 'VascularChanges'
+  ]
+
+
+reflacx_i:
+  path: /staff/aliceschiavone/data/mcxr_data/reflacx_i
+  classes: [-1, 0, 1]
+  findings: [
+    'Airway wall thickening',  'Atelectasis',  'Consolidation', 
+    'Emphysema', 'Enlarged cardiac silhouette',  'Fibrosis', 
+    'Fracture', 'Groundglass opacity', 'Mass', 
+    'Nodule',  'Pleural effusion', 'Pleural thickening', 
+    'Pneumothorax',  'Pulmonary edema', 'Wide mediastinum'
+  ]
+  language: English
+
+reflacx_ii:
+  path: /staff/aliceschiavone/data/mcxr_data/reflacx_ii
+  classes: [-1, 0, 1]
+  findings: [
+    'Abnormal mediastinal contour',  'Acute fracture',  'Atelectasis',
+    'Consolidation',  'Enlarged cardiac silhouette',  'Enlarged hilum',
+    'Groundglass opacity',  'Hiatal hernia', 'High lung volume / emphysema',
+    'Interstitial lung disease',  'Lung nodule or mass', 'Pleural abnormality', 
+    'Pneumothorax', 'Pulmonary edema'
+  ]
+  language: English
+
+reflacx_i_all-test:
+  path: /staff/aliceschiavone/data/mcxr_data/reflacx_i_all-test
+  classes: [-1, 0, 1]
+  findings: [
+    'Airway wall thickening',  'Atelectasis',  'Consolidation', 
+    'Emphysema', 'Enlarged cardiac silhouette',  'Fibrosis', 
+    'Fracture', 'Groundglass opacity', 'Mass', 
+    'Nodule',  'Pleural effusion', 'Pleural thickening', 
+    'Pneumothorax',  'Pulmonary edema', 'Wide mediastinum'
+  ]
+  language: English
+
+reflacx_ii_all-test:
+  path: /staff/aliceschiavone/data/mcxr_data/reflacx_ii_all-test
+  classes: [-1, 0, 1]
+  findings: [
+    'Abnormal mediastinal contour',  'Acute fracture',  'Atelectasis',
+    'Consolidation',  'Enlarged cardiac silhouette',  'Enlarged hilum',
+    'Groundglass opacity',  'Hiatal hernia', 'High lung volume / emphysema',
+    'Interstitial lung disease',  'Lung nodule or mass', 'Pleural abnormality', 
+    'Pneumothorax', 'Pulmonary edema'
+  ]
+  language: English
+
+
+# ........ Synthetic
+
+synth_mimic:
+  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/mimic
+  classes: [-1, 0, 1, 2]
+  findings: [
+    "Atelectasis", "Cardiomegaly", "Consolidation",
+    "Edema", "Enlarged Cardiomediastinum", "Fracture",
+    "Lung Lesion", "Lung Opacity", #"No Finding",
+    "Pleural Effusion", "Pleural Other", "Pneumonia",
+    "Pneumothorax", "Support Devices",
+  ]
+
+synth_padchest:
+  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/padchest
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+
+synth_padchest_EN:
+  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/padchest_EN
+  classes: [-1, 1]
+  findings: [
+    'air trapping', 'alveolar pattern', 'aortic atheromatosis',
+    'aortic button enlargement', 'aortic elongation', 'apical pleural thickening',
+    'atelectasis', 'bronchiectasis', 'bronchovascular markings',
+    'calcified densities', 'calcified granuloma', 'callus rib fracture',
+    'cardiomegaly', 'central venous catheter via jugular vein', 'chronic changes',
+    'consolidation', 'costophrenic angle blunting', 'diaphragmatic eventration',
+    'dual chamber device', 'endotracheal tube', 'fibrotic band', 'flattened diaphragm',
+    'goiter', 'gynecomastia', 'hemidiaphragm elevation', 'hiatal hernia',
+    'hilar congestion', 'hilar enlargement', 'increased density',
+    'infiltrates', 'interstitial pattern', 'kyphosis', 'laminar atelectasis',
+    'mammary prosthesis', 'metal', 'nipple shadow', #'no finding',
+    'nodule', 'nsg tube', 'osteosynthesis material', 'pacemaker',
+    'pleural effusion', 'pseudonodule', 'scoliosis', 'sternotomy',
+    'suture material', 'vascular hilar enlargement', 'vertebral anterior compression',
+    'vertebral degenerative changes', 'volume loss'
+  ]
+
+synth_casia:
+  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/casia
+  classes: [-1, 1]
+  findings: [
+    'cardiomegaly', 'mass', 'pleuraleffusion',
+    'pneumonia', 'pneumothorax'
+  ]
+
+synth_danskcxr:
+  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/danskcxr
+  classes: [-1, 1, 2]
+  findings: [
+    'Abscess', 'Aneurysm', 'Asbestosis',
+    'Aspergillosis', 'Atelectasis', 'Cardiomegaly', 
+    'CavitaryLesion', 'ChronicLungChanges', 'Consolidation',
+    'CorrectPlacement', 'CystBullae', 'DiffuseInfiltrate',
+    'ElevatedHemidiaphragm', 'Emphysema', 'EnlargedMediastinum',
+    'Fibrosis', 'FlattenedDiaphragm', 'FocalInfiltrate',
+    'Fracture', 'HiatusHernia', 'IncreasedInterstitial',
+    'Infiltrate', 'InterlobarThickening', 'LungDecreasedTranslucency',
+    'LungIncreasedTranslucency', 'LungSurgery', 'LymphNodePathology',
+    'MalignantCancer', 'MediastinalShift', 'MediastinalTumor',
+    'NoduleTumorMass', 'NotCorrectPlacement', 'OperationImplants',
+    'PericardialEffusion', 'PleuralCalcification', 'PleuralChanges',
+    'PleuralContraction', 'PleuralEffusion', 'PleuralThickening',
+    'Pneumomediastinum', 'PneumoniaInfection', 'Pneumothorax',
+    'Sarcoidosis', 'StasisEdema', 'SubcutaneousEmphysema',
+    'SupportDevices', 'Tuberculosis', 'VascularChanges'
+  ]
+
+
+danskcxr_H:
+  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_H
+  classes: [-1, 1, 2]
+  findings: 
+    Root:
+      Abscess: "X"
+      Asbestosis: "X"
+      Aspergillosis: "X"
+      Cardiomegaly: "X"
+      ChronicLungChanges: "X"
+      ElevatedHemidiaphragm: "X"
+      EnlargedMediastinum:
+        LymphNodePathology: "X"
+        MediastinalTumor: "X"
+        VascularChanges:
+          Aneurysm: "X"
+      Fibrosis: "X"
+      FlattenedDiaphragm: "X"
+      Fracture: "X"
+      HiatusHernia: "X"
+      Infiltrate:
+        CavitaryLesion: "X"
+        Consolidation: "X"
+        DiffuseInfiltrate: "X"
+        FocalInfiltrate: "X"
+        NoduleTumorMass: "X"
+      LungDecreasedTranslucency:
+        Atelectasis: "X"
+        IncreasedInterstitial: "X"
+        InterlobarThickening: "X"
+        PleuralEffusion: "X"
+      LungIncreasedTranslucency:
+        CystBullae: "X"
+        Emphysema: "X"
+        Pneumothorax: "X"
+      LungSurgery: "X"
+      MalignantCancer: "X"
+      MediastinalShift: "X"
+      NotAbnormal: "X"
+      OperationImplants: "X"
+      PericardialEffusion: "X"
+      PleuralChanges:
+        PleuralContraction: "X"
+        PleuralThickening:
+          PleuralCalcification: "X"
+      Pneumomediastinum: "X"
+      PneumoniaInfection: "X"
+      Sarcoidosis: "X"
+      StasisEdema: "X"
+      SubcutaneousEmphysema: "X"
+      SupportDevices:
+        CorrectPlacement: "X"
+        NotCorrectPlacement: "X"
+      Tuberculosis: "X"
+  language: Danish
+
+bd5:
+  path: /staff/aliceschiavone/data/mcxr_data/bd5
+  classes: [-1, 0, 1]
+  findings: [
+    'Focal Cortical Dysplasia',
+    'Hippocampal Abnormalities',
+    'Mesial Temporal Sclerosis'
+  ]
+
+bd5_translated_v1:
+  path: /staff/aliceschiavone/data/mcxr_data/bd5_translated_v1
+  classes: [-1, 0, 1]
+  findings: [
+    'Focal Cortical Dysplasia',
+    'Hippocampal Abnormalities',
+    'Mesial Temporal Sclerosis'
+  ]
+
+bd5_translated_v2:
+  path: /staff/aliceschiavone/data/mcxr_data/bd5_translated_v2
+  classes: [-1, 0, 1]
+  findings: [
+    'Focal Cortical Dysplasia',
+    'Hippocampal Abnormalities',
+    'Mesial Temporal Sclerosis'
+  ]
+
+bd5_translated_EN:
+  path: /staff/aliceschiavone/data/mcxr_data/bd5_translated_EN
+  classes: [-1, 0, 1]
+  findings: [
+    'Focal Cortical Dysplasia',
+    'Hippocampal Abnormalities',
+    'Mesial Temporal Sclerosis'
+  ]
+
+bd5_translated_scand:
+  path: /staff/aliceschiavone/data/mcxr_data/bd5_translated_scand
+  classes: [-1, 0, 1]
+  findings: [
+    'Focal Cortical Dysplasia',
+    'Hippocampal Abnormalities',
+    'Mesial Temporal Sclerosis'
+  ]

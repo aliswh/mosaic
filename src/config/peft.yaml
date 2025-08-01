@@ -1,0 +1,20 @@
+PEFT_KWARGS:
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  lora_dropout: 0
+  bias: "none"
+  use_gradient_checkpointing: false
+  random_state: 42
+  use_rslora: true
+  loftq_config: null
+
+GEMMA_PEFT_KWARGS:
+  finetune_vision_layers: false
+  finetune_language_layers: true
+  finetune_mlp_modules: true

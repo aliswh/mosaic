@@ -1,0 +1,5 @@
+eval_steps: 3
+learning_rate: 0.0005
+weight_decay: 0.01
+device_batch_size: 16
+warmup_ratio: 0.05 

@@ -1,0 +1,4 @@
+eval_steps: 1
+learning_rate: 0.00005
+weight_decay: 0.01
+device_batch_size: 32 
