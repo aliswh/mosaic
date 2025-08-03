@@ -1,0 +1,76 @@
+{
+  "builder_name": "csv",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "mimic",
+  "dataset_size": 706514,
+  "description": "",
+  "download_checksums": {
+    "/home/alice/work/data/languages/en/mimic/m_train.csv": {
+      "num_bytes": 550103,
+      "checksum": null
+    },
+    "/home/alice/work/data/languages/en/mimic/m_val.csv": {
+      "num_bytes": 50018,
+      "checksum": null
+    },
+    "/home/alice/work/data/languages/en/mimic/m_test.csv": {
+      "num_bytes": 104989,
+      "checksum": null
+    }
+  },
+  "download_size": 705110,
+  "features": {
+    "report": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "labels": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "classes": {
+      "feature": {
+        "dtype": "int64",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "findings": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 1411624,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 551217,
+      "num_examples": 535,
+      "dataset_name": "mimic"
+    },
+    "val": {
+      "name": "val",
+      "num_bytes": 50112,
+      "num_examples": 50,
+      "dataset_name": "mimic"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 105185,
+      "num_examples": 100,
+      "dataset_name": "mimic"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

@@ -1,0 +1,1 @@
+This data in this folder is a constructed example of the MIMIC dataset.
