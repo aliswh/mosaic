@@ -1,0 +1,7 @@
+paths:
+  base: /home/alice/work/mosaic
+  data: data
+  output: outputs
+  models: models
+  checkpoints: checkpoints
+  mcxr_data: data/mcxr_data

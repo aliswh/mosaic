@@ -1,5 +1,5 @@
 mimic:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic
+  path: data/mimic/mimic
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -11,7 +11,7 @@ mimic:
   language: English
 
 mimic_spanish:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_spanish
+  path: data/mcxr_data/mimic_spanish
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -23,7 +23,7 @@ mimic_spanish:
   language: English
 
 mimic_french:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_french
+  path: data/mcxr_data/mimic_french
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -35,7 +35,7 @@ mimic_french:
   language: English
 
 mimic_danish:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_danish
+  path: data/mcxr_data/mimic_danish
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -47,7 +47,7 @@ mimic_danish:
   language: English
 
 mimic_translated:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated
+  path: data/mcxr_data/mimic_translated
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -61,7 +61,7 @@ mimic_translated:
 
 
 mimic_a:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_a
+  path: data/mcxr_data/mimic_a
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -73,7 +73,7 @@ mimic_a:
   language: English
 
 mimic_translated_v1:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated_v1_fixed
+  path: data/mcxr_data/mimic_translated_v1_fixed
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -84,7 +84,7 @@ mimic_translated_v1:
   ]
 
 mimic_translated_v2:
-  path: /staff/aliceschiavone/data/mcxr_data/mimic_translated_v2_fixed
+  path: data/mcxr_data/mimic_translated_v2_fixed
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -95,7 +95,7 @@ mimic_translated_v2:
   ]
 
 chexpert:
-  path: /staff/aliceschiavone/data/mcxr_data/chexpert
+  path: data/mcxr_data/chexpert
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -107,7 +107,7 @@ chexpert:
   language: English
 
 padchest:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest
+  path: data/mcxr_data/padchest
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -129,7 +129,7 @@ padchest:
   language: Spanish
 
 padchest_mostfreq:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_mostfreq
+  path: data/mcxr_data/padchest_mostfreq
   classes: [-1, 1]
   findings: [
     'air trapping', 'aortic atheromatosis', 'aortic elongation',
@@ -142,7 +142,7 @@ padchest_mostfreq:
   language: Spanish
 
 padchest_EN:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN
+  path: data/mcxr_data/padchest_EN
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -164,7 +164,7 @@ padchest_EN:
   language: English
 
 padchest_EN_mostfreq:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN_mostfreq
+  path: data/mcxr_data/padchest_EN_mostfreq
   classes: [-1, 1]
   findings: [
     'air trapping', 'aortic atheromatosis', 'aortic elongation',
@@ -177,7 +177,7 @@ padchest_EN_mostfreq:
   language: Spanish
 
 padchest_translated_v1:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_translated_v1_fixed
+  path: data/mcxr_data/padchest_translated_v1_fixed
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -198,7 +198,7 @@ padchest_translated_v1:
   ]
 
 padchest_translated_v2:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_translated_v2_fixed
+  path: data/mcxr_data/padchest_translated_v2_fixed
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -219,7 +219,7 @@ padchest_translated_v2:
   ]
 
 padchest_EN_mostfreq_translated:
-  path: /staff/aliceschiavone/data/mcxr_data/padchest_EN_mostfreq_translated
+  path: data/mcxr_data/padchest_EN_mostfreq_translated
   classes: [-1, 1]
   findings: [
     'air trapping', 'aortic atheromatosis', 'aortic elongation',
@@ -231,7 +231,7 @@ padchest_EN_mostfreq_translated:
   ]
 
 casia:
-  path: /staff/aliceschiavone/data/mcxr_data/casia
+  path: data/mcxr_data/casia
   classes: [-1, 1]
   findings: [
     'cardiomegaly', 'mass', 'pleuraleffusion',
@@ -240,7 +240,7 @@ casia:
   language: French
 
 casia_translated:
-  path: /staff/aliceschiavone/data/mcxr_data/casia_translated
+  path: data/mcxr_data/casia_translated
   classes: [-1, 1]
   findings: [
     'cardiomegaly', 'mass', 'pleuraleffusion',
@@ -249,7 +249,7 @@ casia_translated:
   language: French
 
 danskcxr:
-  path: /staff/aliceschiavone/data/mcxr_data/danskcxr
+  path: data/mcxr_data/danskcxr
   classes: [-1, 1, 2]
   findings: [
     'Abscess', 'Aneurysm', 'Asbestosis',
@@ -272,7 +272,7 @@ danskcxr:
   language: Danish
 
 danskcxr_EN:
-  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_EN
+  path: data/mcxr_data/danskcxr_EN
   classes: [-1, 1, 2]
   findings: [
     'Abscess', 'Aneurysm', 'Asbestosis',
@@ -295,7 +295,7 @@ danskcxr_EN:
   language: English
 
 danskcxr_mostfreq:
-  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_mostfreq
+  path: data/mcxr_data/danskcxr_mostfreq
   classes: [-1, 1, 2]
   findings: [
     'Atelectasis', 'Cardiomegaly', 'ChronicLungChanges', 
@@ -307,7 +307,7 @@ danskcxr_mostfreq:
   language: Danish
 
 danskcxr_mostfreq_translated:
-  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_mostfreq_translated
+  path: data/mcxr_data/danskcxr_mostfreq_translated
   classes: [-1, 1, 2]
   findings: [
     'Atelectasis', 'Cardiomegaly', 'ChronicLungChanges', 
@@ -319,7 +319,7 @@ danskcxr_mostfreq_translated:
   language: Danish
 
 danskcxr_translated:
-  path: /staff/aliceschiavone/data/mcxr_data/danskcxr_translated
+  path: data/mcxr_data/danskcxr_translated
   classes: [-1, 1, 2]
   findings: [
     'Abscess', 'Aneurysm', 'Asbestosis',
@@ -342,7 +342,7 @@ danskcxr_translated:
 
 
 reflacx_i:
-  path: /staff/aliceschiavone/data/mcxr_data/reflacx_i
+  path: data/mcxr_data/reflacx_i
   classes: [-1, 0, 1]
   findings: [
     'Airway wall thickening',  'Atelectasis',  'Consolidation', 
@@ -354,7 +354,7 @@ reflacx_i:
   language: English
 
 reflacx_ii:
-  path: /staff/aliceschiavone/data/mcxr_data/reflacx_ii
+  path: data/mcxr_data/reflacx_ii
   classes: [-1, 0, 1]
   findings: [
     'Abnormal mediastinal contour',  'Acute fracture',  'Atelectasis',
@@ -393,7 +393,7 @@ reflacx_ii_all-test:
 # ........ Synthetic
 
 synth_mimic:
-  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/mimic
+  path: data/mcxr_data/synthetic/medgemma-27b_zs/mimic
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",
@@ -404,7 +404,7 @@ synth_mimic:
   ]
 
 synth_padchest:
-  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/padchest
+  path: data/mcxr_data/synthetic/medgemma-27b_zs/padchest
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -425,7 +425,7 @@ synth_padchest:
   ]
 
 synth_padchest_EN:
-  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/padchest_EN
+  path: data/mcxr_data/synthetic/medgemma-27b_zs/padchest_EN
   classes: [-1, 1]
   findings: [
     'air trapping', 'alveolar pattern', 'aortic atheromatosis',
@@ -446,7 +446,7 @@ synth_padchest_EN:
   ]
 
 synth_casia:
-  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/casia
+  path: data/mcxr_data/synthetic/medgemma-27b_zs/casia
   classes: [-1, 1]
   findings: [
     'cardiomegaly', 'mass', 'pleuraleffusion',
@@ -454,7 +454,7 @@ synth_casia:
   ]
 
 synth_danskcxr:
-  path: /staff/aliceschiavone/data/mcxr_data//synthetic/medgemma-27b_zs/danskcxr
+  path: data/mcxr_data/synthetic/medgemma-27b_zs/danskcxr
   classes: [-1, 1, 2]
   findings: [
     'Abscess', 'Aneurysm', 'Asbestosis',

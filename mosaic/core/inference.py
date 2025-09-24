@@ -6,27 +6,33 @@ from pathlib import Path
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
-from utils import process_dataset_vllm, decode_output_vllm, load_config, get_working_dir
-from evals import get_F1_scores
+from mosaic.core.utils import process_dataset_vllm, decode_output_vllm, load_config, get_working_dir
+from mosaic.core.evals import get_F1_scores
 from datetime import datetime
 import yaml, wandb
 import argparse, os
 
-def model_init(model_tag, trained_model, is_quantized, load_adapter):
+# Load configs
+wdir = get_working_dir()
+vllm_config = load_config(wdir, 'vllm')
+paths_config = load_config(wdir, 'paths')
+
+MAX_SEQ_LENGTH = vllm_config['VLLM_KWARGS']['max_model_len']
+
+def model_init(model_tag, is_quantized, load_adapter):
+    vllm_config = load_config(get_working_dir(), 'vllm')
     quantization = {
-        'quantization': "bitsandbytes",
+        'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
     } if is_quantized else {}
 
     llm = LLM(
-        model_tag if load_adapter else trained_model, 
-        **LLM_KWARGS,
+        model_tag, 
+        **vllm_config['llm'],
         **quantization,
-        enable_lora = load_adapter
-        )
-    sampling_params = SamplingParams(
-        **SAMPLING_KWARGS
-        )
+        enable_lora=load_adapter
+    )
+    sampling_params = SamplingParams(**vllm_config['sampling'])
     return llm, sampling_params
 
 def decode(outputs, empty_json, classes):
@@ -82,10 +88,12 @@ if __name__ == "__main__":
 
     wdir = get_working_dir()
     datasets_yaml = load_config(wdir, 'datasets.yaml')
-    models_yaml = = load_config(wdir, 'models.yaml')  
+    models_yaml = load_config(wdir, 'models.yaml')
 
     datasets_names = datasets_names.split()
-    datasets = [load_from_disk(datasets_yaml[name]['path']) for name in datasets_names]
+    # Convert relative paths to absolute
+    base_path = Path(paths_config['paths']['base'])
+    datasets = [load_from_disk(str(base_path / datasets_yaml[name]['path'])) for name in datasets_names]
     datasets_classes = [datasets_yaml[name]['classes'] for name in datasets_names]
     print(datasets_names)
 
@@ -110,7 +118,7 @@ if __name__ == "__main__":
     print(f"Model: {trained_model_path}")
 
     wandb.init(project=args.project_name, name=f"{trained_model_tag}_test{args.experiment_tag}")
-    wandb.log(SAMPLING_KWARGS)
+    wandb.log(vllm_config['sampling'])
 
     base_save_path = output_dir + '/' + trained_model_tag + args.test_tag + '/'
     Path(base_save_path).mkdir(parents=True, exist_ok=True)

@@ -100,3 +100,26 @@ medgemma-27b:
   config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-12b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"
   chat_template: "gemma-3"
   batch_size: 32
+
+# 
+
+mosaic-4b:
+  model_tag: "AliceSch/mosaic-4b"
+  load_in_4bit: false
+  max_seq_length: 2048
+  lora_rank: 64
+  lora_alpha: 128
+  model_family: gemma
+  chat_template: "gemma-3"
+  batch_size: 16
+
+mosaic-12b:
+  model_tag: "AliceSch/mosaic-12b"
+  load_in_4bit: false
+  max_seq_length: 2048
+  lora_rank: 64
+  lora_alpha: 128
+  model_family: gemma
+  chat_template: "gemma-3"
+  batch_size: 4
+  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-12b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"

@@ -2,65 +2,28 @@ from vllm import LLM, SamplingParams
 import argparse
 from tqdm import tqdm 
 import warnings
-from constants import FB_TARGET_LANGUAGES, LLM_KWARGS, SAMPLING_KWARGS, SRC_PATH, LANG_CODES
 import os, yaml
 from datasets import load_from_disk
 from datasets import concatenate_datasets
-from utils import get_working_dir, load_config
+from mosaic.core.utils import get_working_dir, load_config
 
-LANG_CODES = {
-    # Germanic
-    'eng_Latn': 'English',
-    'deu_Latn': 'German',
-    'nld_Latn': 'Dutch',
-    'dan_Latn': 'Danish',
-    'nor_Latn': 'Norwegian',
-    'swe_Latn': 'Swedish',
-    
-    # Romance
-    'fra_Latn': 'French',
-    'ita_Latn': 'Italian',
-    'por_Latn': 'Portuguese',
-    'spa_Latn': 'Spanish',
-    'ron_Latn': 'Romanian',
-    
-    # Slavic
-    'pol_Latn': 'Polish',
-    'ces_Latn': 'Czech',
-    'slk_Latn': 'Slovak',
-    'slv_Latn': 'Slovene',
-    'bul_Cyrl': 'Bulgarian',
-    'hrv_Latn': 'Croatian',
-    
-    # Baltic
-    'lit_Latn': 'Lithuanian',
-    'lav_Latn': 'Latvian',
-    'est_Latn': 'Estonian',
-    
-    # Other Indo-European
-    'ell_Grek': 'Greek',
-    'gle_Latn': 'Irish',
-    'hun_Latn': 'Hungarian',
-    'fin_Latn': 'Finnish',
-    'mlt_Latn': 'Maltese'
-}
+# Load language codes from config
+wdir = get_working_dir()
+languages_config = load_config(wdir, 'languages')
 
 def model_init(model_tag, is_quantized, load_adapter):
+    vllm_config = load_config(get_working_dir(), 'vllm')
     quantization = {
-        'quantization': "bitsandbytes", # TODO is it different for unsloth dynamic quant?
+        'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
     } if is_quantized else {}
 
     llm = LLM(
-        model_tag, 
-        gpu_memory_utilization=0.9,
-        max_model_len=2048,
+        model_tag,
+        **vllm_config['llm'],
         **quantization,
-        )
-    sampling_params = SamplingParams(
-        temperature = 1.0, top_p = 0.95, top_k = 64,
-        seed=42, max_tokens=1024
-        )
+    )
+    sampling_params = SamplingParams(**vllm_config['sampling'])
     return llm, sampling_params
 
 
@@ -71,11 +34,13 @@ def save_outputs(dataset, dataset_name, output_folder):
 
 
 def add_prompt(text, lang_code):
-    prompt = f"Translate this text into {LANG_CODES[lang_code]}. Respond only with the translation."
+    languages_config = load_config(get_working_dir(), 'languages')
+    target_language = languages_config['languages'][lang_code]
+    prompt = f"Translate this text into {target_language}. Respond only with the translation."
     return {"conversations": [
         {"role": "system", "content": prompt},
         {"role": "user","content": text['report']}
-        ], "source":"translation"}
+    ], "source":"translation"}
 
 
 def process_for_translations(dataset, target_lang, llm):
@@ -122,13 +87,15 @@ if __name__ == '__main__':
     source_language = args.source_language
     target_languages = args.target_languages
 
+    languages_config = load_config(get_working_dir(), 'languages')
+    
     if source_language is None:
         source_language = 'eng_Latn'
-        warnings.warn('Source languages not provided. Defaulting to ' + str(source_language))
+        warnings.warn('Source language not provided. Defaulting to ' + str(source_language))
     if target_languages is None:
-        target_languages = ['spa_Latn']
+        target_languages = languages_config['target_languages']
         warnings.warn('Target languages not provided. Defaulting to ' + str(target_languages))
-    elif type(target_languages) == str:
+    elif isinstance(target_languages, str):
         target_languages = target_languages.split()
         print(target_languages)
     else:
@@ -136,7 +103,7 @@ if __name__ == '__main__':
 
     wdir = get_working_dir()
     datasets_yaml = load_config(wdir, 'datasets.yaml')
-    models_yaml = = load_config(wdir, 'models.yaml')
+    models_yaml = load_config(wdir, 'models.yaml')
     model_config = models_yaml[model_tag]
 
     dataset = load_from_disk(datasets_yaml[dataset_name]['path'])

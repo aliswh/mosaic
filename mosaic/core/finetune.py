@@ -1,12 +1,13 @@
-from unsloth import FastModel
-from unsloth.chat_templates import get_chat_template, train_on_responses_only
+import os
 import torch
 import wandb
-from trl import SFTTrainer, SFTConfig
 import pandas as pd
 import ast, shutil, argparse
+from unsloth import FastModel
+from unsloth.chat_templates import get_chat_template, train_on_responses_only
+from trl import SFTTrainer, SFTConfig
 from transformers import PrinterCallback
-from utils import get_working_dir, load_config, load_dataset, process_dataset, MinEpochsEarlyStoppingCallback
+from mosaic.core.utils import get_working_dir, load_config, load_dataset, process_dataset, MinEpochsEarlyStoppingCallback
 
 
 def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint: str = None) -> tuple:
@@ -249,7 +250,8 @@ if __name__ == "__main__":
     if args.check_prompts_size:
     # check that prompts are not too long before training
         tokenized_prompts = tokenizer(train_dataset['text'])
-        assert max([len(x) for x in tokenized_prompts['input_ids']]) <= MAX_SEQ_LENGTH, f"Prompts are too long. Max length is {MAX_SEQ_LENGTH}."
+        max_length = model_config['max_seq_length']
+        assert max([len(x) for x in tokenized_prompts['input_ids']]) <= max_length, f"Prompts are too long. Max length is {max_length}."
 
     trainer = init_trainer(
         model_config, training_config, model_training_config, logging_config, 

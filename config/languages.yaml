@@ -1,0 +1,44 @@
+languages:
+  # Germanic
+  eng_Latn: English
+  deu_Latn: German
+  nld_Latn: Dutch
+  dan_Latn: Danish
+  nor_Latn: Norwegian
+  swe_Latn: Swedish
+  
+  # Romance
+  fra_Latn: French
+  ita_Latn: Italian
+  por_Latn: Portuguese
+  spa_Latn: Spanish
+  ron_Latn: Romanian
+  
+  # Slavic
+  pol_Latn: Polish
+  ces_Latn: Czech
+  slk_Latn: Slovak
+  slv_Latn: Slovene
+  bul_Cyrl: Bulgarian
+  hrv_Latn: Croatian
+  
+  # Baltic
+  lit_Latn: Lithuanian
+  lav_Latn: Latvian
+  est_Latn: Estonian
+  
+  # Other Indo-European
+  ell_Grek: Greek
+  gle_Latn: Irish
+  hun_Latn: Hungarian
+  fin_Latn: Finnish
+  mlt_Latn: Maltese
+
+target_languages:
+  - eng_Latn  # English 
+  - dan_Latn  # Danish
+  - spa_Latn  # Spanish
+  - fra_Latn  # French
+  - deu_Latn  # German
+  - ita_Latn  # Italian
+  - por_Latn  # Portuguese
