@@ -1,5 +1,5 @@
 mimic:
-  path: data/mimic/mimic
+  path: mimic
   classes: [-1, 0, 1, 2]
   findings: [
     "Atelectasis", "Cardiomegaly", "Consolidation",

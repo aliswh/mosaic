@@ -40,18 +40,33 @@ conda activate mosaic
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
+# Check if data directory exists
+MIMIC_DATA_DIR="/home/alice/work/mosaic/data/mimic"
+if [ ! -d "$MIMIC_DATA_DIR" ]; then
+    echo "Error: MIMIC dataset directory not found at: $MIMIC_DATA_DIR"
+    echo "Please ensure you have:"
+    echo "1. Downloaded the MIMIC dataset"
+    echo "2. Preprocessed it into the correct format"
+    echo "3. Placed it in the correct directory"
+    echo "Expected structure:"
+    echo "  $MIMIC_DATA_DIR/"
+    echo "    ├── train/"
+    echo "    ├── val/"
+    echo "    └── test/"
+    exit 1
+fi
+
 # Run the training script
 echo "Starting training with:"
 echo "  Experiment: $EXP"
 echo "  Model: AliceSch/mosaic-4b"
 echo "  Output directory: $OUTPUT_DIR"
+echo "  Data directory: $MIMIC_DATA_DIR"
 echo
 
 python -m mosaic.core.finetune \
     --model_name "mosaic-4b" \
     --config_tag "$EXP" \
-    --project_name "mosaic" \
+    --project_name "mosaic-training" \
     --train_dataset_names "mimic" \
-    --valid_dataset_names "mimic" \
-    --experiment_tag "_$EXP" \
-    --check_prompts_size true
+    --valid_dataset_names "mimic"

@@ -4,4 +4,3 @@ paths:
   output: outputs
   models: models
   checkpoints: checkpoints
-  mcxr_data: data/mcxr_data

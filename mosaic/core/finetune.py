@@ -31,7 +31,9 @@ def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint
     """
 
     full_finetuning = True if model_config['lora_rank'] == 0 else False
-
+    is_gemma = 'gemma' in model_tag.lower() or 'gemma' in model_config.get('model_family', '').lower()
+    
+    # Load model with Unsloth optimizations
     model, tokenizer = FastModel.from_pretrained(
         checkpoint if checkpoint else model_tag, 
         max_seq_length = model_config['max_seq_length'],
@@ -39,27 +41,54 @@ def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint
         full_finetuning = full_finetuning,
         dtype = None,
     )
+    
+    if hasattr(tokenizer, 'padding_side'):
+        tokenizer.padding_side = 'right'
+    if hasattr(tokenizer, 'truncation_side'):
+        tokenizer.truncation_side = 'left'
+    
+    # Apply LoRA if needed
     if not full_finetuning:
+        print("Applying LoRA...")
+        peft_kwargs = {**peft_config["PEFT_KWARGS"]}
+        if is_gemma:
+            peft_kwargs.update(peft_config.get("GEMMA_PEFT_KWARGS", {}))
+            
         model = FastModel.get_peft_model(
             model,
             r = model_config['lora_rank'],
-            lora_apha = model_config['lora_alpha'],
-            **peft_config["PEFT_KWARGS"],
-            **peft_config["GEMMA_PEFT_KWARGS"] if 'gemma' in model_tag else {},
+            lora_alpha = model_config['lora_alpha'],
+            **peft_kwargs,
         )
 
-    wandb.log({
+    # Log configuration
+    chat_template = getattr(tokenizer, 'chat_template', None)
+    print(f"Using chat template: {chat_template}")
+    
+    config = {
         'model_config': model_config,
         'full_finetuning': full_finetuning,
-        'peft_config': peft_config["PEFT_KWARGS"], 
-        'gemma': peft_config["GEMMA_PEFT_KWARGS"] if 'gemma' in model_tag else {},
-        'checkpoint': checkpoint if checkpoint else None
-    })
-
-    tokenizer = get_chat_template(
-        tokenizer,
-        chat_template = model_config['chat_template']
-    )
+        'chat_template': chat_template,
+        'peft_config': peft_config["PEFT_KWARGS"],
+        'checkpoint': checkpoint if checkpoint else None,
+    }
+    
+    # Only add Gemma config if relevant
+    if is_gemma:
+        config['gemma_peft'] = peft_config.get("GEMMA_PEFT_KWARGS", {})
+        
+    # Add tokenizer config if available
+    if hasattr(tokenizer, 'pad_token_id'):
+        config['tokenizer_config'] = {
+            'pad_token_id': tokenizer.pad_token_id,
+            'bos_token_id': getattr(tokenizer, 'bos_token_id', None),
+            'eos_token_id': getattr(tokenizer, 'eos_token_id', None),
+            'padding_side': getattr(tokenizer, 'padding_side', None),
+            'truncation_side': getattr(tokenizer, 'truncation_side', None),
+        }
+        
+    wandb.log(config)
+    return model, tokenizer
 
     return model, tokenizer
 
