@@ -50,6 +50,8 @@ echo
 python -m mosaic.core.finetune \
     --model_name "mosaic-4b" \
     --config_tag "$EXP" \
-    --project_name "mosaic-training" \
+    --project_name "mosaic" \
     --train_dataset_names "mimic" \
-    --valid_dataset_names "mimic"
+    --valid_dataset_names "mimic" \
+    --experiment_tag "_$EXP" \
+    --check_prompts_size true
