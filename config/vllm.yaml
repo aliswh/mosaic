@@ -12,7 +12,7 @@ SAMPLING_KWARGS:
   stop:
     - "}"
   include_stop_str_in_output: true
-  seed: SEED
+  seed: 42
   max_tokens: 4096 # 2048
 
 LANG_CODES:

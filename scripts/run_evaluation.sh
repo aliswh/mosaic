@@ -51,7 +51,11 @@ echo
 
 python -m mosaic.core.inference \
     --model_name "mosaic-4b" \
-    --config_tag "$EXP" \
-    --model_path "$MODEL_PATH" \
-    --dataset_names "mimic" \
-    --split "test"
+    --zeroshot "off" \
+    --train_dataset_names "mimic" \
+    --test_dataset_names "mimic" \
+    --project_name "mosaic" \
+    --models_folder "models" \
+    --output_dir "outputs/eval" \
+    --trained_model_path "$MODEL_PATH" \
+    --experiment_tag "_$EXP"

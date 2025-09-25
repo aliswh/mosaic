@@ -21,18 +21,24 @@ MAX_SEQ_LENGTH = vllm_config['VLLM_KWARGS']['max_model_len']
 
 def model_init(model_tag, is_quantized, load_adapter):
     vllm_config = load_config(get_working_dir(), 'vllm')
+    models_config = load_config(get_working_dir(), 'models')
     quantization = {
         'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
     } if is_quantized else {}
 
+    # Use max_seq_length from models config
+    vllm_kwargs = vllm_config['VLLM_KWARGS'].copy()
+    if isinstance(vllm_kwargs.get('max_model_len'), str) and vllm_kwargs['max_model_len'] == 'MAX_SEQ_LENGTH':
+        vllm_kwargs['max_model_len'] = 2048  # Default value from models.yaml
+
     llm = LLM(
         model_tag, 
-        **vllm_config['llm'],
+        **vllm_kwargs,
         **quantization,
         enable_lora=load_adapter
     )
-    sampling_params = SamplingParams(**vllm_config['sampling'])
+    sampling_params = SamplingParams(**vllm_config['SAMPLING_KWARGS'])
     return llm, sampling_params
 
 def decode(outputs, empty_json, classes):
@@ -118,16 +124,15 @@ if __name__ == "__main__":
     print(f"Model: {trained_model_path}")
 
     wandb.init(project=args.project_name, name=f"{trained_model_tag}_test{args.experiment_tag}")
-    wandb.log(vllm_config['sampling'])
+    wandb.log(vllm_config['SAMPLING_KWARGS'])
 
     base_save_path = output_dir + '/' + trained_model_tag + args.test_tag + '/'
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
     model, sampling_params = model_init(
         model_config['model_tag'],
-        trained_model_path, 
         model_config['load_in_4bit'],
-        model_config['load_adapter']
+        model_config.get('load_adapter', False)  # Default to False if not specified
         )
 
     tqdm_datasets = tqdm(enumerate(datasets))
@@ -146,23 +151,25 @@ if __name__ == "__main__":
                 include_description=include_description, description_language=description_language,
                 few_shot= True if "fewshot" in zeroshot else False
             )
-            dataset = dataset['text']
+            if 'text' in dataset:
+                dataset = dataset['text']
+            else:
+                dataset = dataset['report']  # Use 'report' column for medical datasets
             print(dataset[0])
 
             tokenizer = AutoTokenizer.from_pretrained(model_config['model_tag'])
             tokenized_prompts = tokenizer(dataset)
-            assert max([len(x) for x in tokenized_prompts['input_ids']]) <= MAX_SEQ_LENGTH, f"Prompts are too long. Max length is {MAX_SEQ_LENGTH}."
+            max_seq_length = 2048  # From models.yaml
+            assert max([len(x) for x in tokenized_prompts['input_ids']]) <= max_seq_length, f"Prompts are too long. Max length is {max_seq_length}."
 
             findings = datasets_yaml[datasets_names[idx]]['findings']
             classes = datasets_classes[idx]
-            empty_json = {f: None for f in findings} # invalid predictions are None
+            empty_json = {f: None for f in findings}  # invalid predictions are None
 
             outputs, n_none = generate_response(
                 model, trained_model_path, sampling_params, 
-                dataset, empty_json, classes, model_config['load_adapter']
-                )
-
-            # evaluate
+                dataset, empty_json, classes, model_config.get('load_adapter', False)
+                )            # evaluate
             output_evals = get_F1_scores(gt, outputs)
             dataset_name = datasets_names[idx]
             mean_f1 = np.nanmean(output_evals[2])
