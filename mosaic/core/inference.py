@@ -8,8 +8,7 @@ from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 from mosaic.core.utils import process_dataset_vllm, decode_output_vllm, load_config, get_working_dir
 from mosaic.core.evals import get_F1_scores
-from datetime import datetime
-import yaml, wandb
+import wandb
 import argparse, os
 
 # Load configs
@@ -21,7 +20,6 @@ MAX_SEQ_LENGTH = vllm_config['VLLM_KWARGS']['max_model_len']
 
 def model_init(model_tag, is_quantized, load_adapter):
     vllm_config = load_config(get_working_dir(), 'vllm')
-    models_config = load_config(get_working_dir(), 'models')
     quantization = {
         'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
@@ -47,7 +45,7 @@ def decode(outputs, empty_json, classes):
         o, empty_json, idx, classes
     ) for idx, o in enumerate(outputs)]
 
-def generate_response(model, lora_path, sampling_params, dataset, empty_json, classes, is_lora=True):
+def generate_response(model, sampling_params, dataset, empty_json, classes):
     results = []
     
     outputs = model.generate(dataset, sampling_params)
@@ -68,7 +66,7 @@ if __name__ == "__main__":
     argparse.add_argument('-m', '--model_name', help='Model name', required=True)
     argparse.add_argument('-zs', '--zeroshot', help='Use zeroshot or original model', default=True, required=False)
     argparse.add_argument('-trds', '--train_dataset_names', help='Dataset name(s) used for training', required=True)
-    argparse.add_argument('-p', '--project_name', help='Wandb project name', required=True)
+    argparse.add_argument('-p', '--project_name', help='Wandb project name', required=False, default=None)
     argparse.add_argument('-et', '--experiment_tag', help='Additional information', required=False, default='')
     argparse.add_argument('-tt', '--test_tag', help='Tag to save test results', required=False, default='')
     argparse.add_argument('-d', '--models_folder', help='Where to find models', required=True)
@@ -91,6 +89,7 @@ if __name__ == "__main__":
     include_description = True if args.include_description == 'true' else False
     description_language = args.description_language # 'en' or 'da'
     checkpoint = args.checkpoint
+    project_name = args.project_name
 
     wdir = get_working_dir()
     datasets_yaml = load_config(wdir, 'datasets.yaml')
@@ -123,8 +122,12 @@ if __name__ == "__main__":
     if args.trained_model_path: trained_model_path = args.trained_model_path
     print(f"Model: {trained_model_path}")
 
-    wandb.init(project=args.project_name, name=f"{trained_model_tag}_test{args.experiment_tag}")
-    wandb.log(vllm_config['SAMPLING_KWARGS'])
+    global wandb_log
+    if project_name: wandb_log = True
+    else: wandb_log = False
+    if wandb_log:
+        wandb.init(project=project_name, name=f"{trained_model_tag}_test{args.experiment_tag}")
+        wandb.log(vllm_config['SAMPLING_KWARGS'])
 
     base_save_path = output_dir + '/' + trained_model_tag + args.test_tag + '/'
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
@@ -151,10 +154,10 @@ if __name__ == "__main__":
                 include_description=include_description, description_language=description_language,
                 few_shot= True if "fewshot" in zeroshot else False
             )
-            if 'text' in dataset:
-                dataset = dataset['text']
+            if 'report' in dataset.features:
+                dataset = dataset['report']
             else:
-                dataset = dataset['report']  # Use 'report' column for medical datasets
+                dataset = dataset['text'] 
             print(dataset[0])
 
             tokenizer = AutoTokenizer.from_pretrained(model_config['model_tag'])
@@ -167,14 +170,15 @@ if __name__ == "__main__":
             empty_json = {f: None for f in findings}  # invalid predictions are None
 
             outputs, n_none = generate_response(
-                model, trained_model_path, sampling_params, 
-                dataset, empty_json, classes, model_config.get('load_adapter', False)
-                )            # evaluate
+                model, sampling_params, 
+                dataset, empty_json, classes
+                )
             output_evals = get_F1_scores(gt, outputs)
             dataset_name = datasets_names[idx]
             mean_f1 = np.nanmean(output_evals[2])
             print(f'Model: {trained_model_tag}, Dataset: {dataset_name}, mean wF1: {mean_f1:.3f}, Invalid answers: {n_none}')
-            wandb.log({'mean_f1_'+dataset_name:mean_f1, 'invalid_answers':n_none, 'invalid_answers_perc':n_none/len(outputs)*100})
+            if wandb_log:
+                wandb.log({'mean_f1_'+dataset_name:mean_f1, 'invalid_answers':n_none, 'invalid_answers_perc':n_none/len(outputs)*100})
 
             save_path = base_save_path + dataset_name 
             save_path += args.experiment_tag+"/" if args.experiment_tag else "/"

@@ -1,7 +1,7 @@
 # if lora rank is 0, full fine-tuning
 
 llama-3b: 
-  model_tag: "unsloth/Llama-3.2-3B" # "meta-llama/Llama-3.2-3B-Instruct"
+  model_tag: "unsloth/Llama-3.2-3B" 
   load_in_4bit: true
   max_seq_length: 2048
   lora_rank: 64 
@@ -53,7 +53,6 @@ gemma-4b:
   model_family: gemma
   chat_template: "gemma-3"
   batch_size: 16
-  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-4b-it/snapshots/b2e2d5668e652e0d0fe9cb9ae42a061e33cb256d/config.json"
 
 medgemma-4b:
   model_tag: "unsloth/medgemma-4b-it"
@@ -64,7 +63,6 @@ medgemma-4b:
   model_family: gemma
   chat_template: "gemma-3"
   batch_size: 16
-  config_path: "/home/alice/.cache/huggingface/hub/models--google--medgemma-4b-it/snapshots/698f7911b8e0569ff4ebac5d5552f02a9553063c/config.json"
 
 gemma-12b:
   model_tag: "unsloth/gemma-3-12b-it"
@@ -75,7 +73,6 @@ gemma-12b:
   model_family: gemma
   chat_template: "gemma-3"
   batch_size: 4
-  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-12b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"
 
 gemma-27b:
   model_tag: "unsloth/gemma-3-27b-it"
@@ -86,7 +83,6 @@ gemma-27b:
   model_family: gemma
   chat_template: "gemma-3"
   batch_size: 32
-  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-27b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"
 
 medgemma-27b:
   model_tag: "unsloth/medgemma-27b-text-it"
@@ -97,11 +93,10 @@ medgemma-27b:
   lora_alpha: 64
   model_family: gemma
   load_adapter: false
-  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-12b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"
   chat_template: "gemma-3"
   batch_size: 32
 
-# 
+# MOSAIC models
 
 mosaic-4b:
   model_tag: "AliceSch/mosaic-4b"
@@ -122,4 +117,3 @@ mosaic-12b:
   model_family: gemma
   chat_template: "gemma-3"
   batch_size: 4
-  config_path: "/home/alice/.cache/huggingface/hub/models--unsloth--gemma-3-12b-it/snapshots/1b50bd0b78e6af2c4ea9e9bf220ac2b9a7a22655/config.json"

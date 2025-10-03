@@ -5,7 +5,7 @@ VLLM_KWARGS:
   max_lora_rank: 64
 
 SAMPLING_KWARGS:
-  temperature: 0.5 #0.5
+  temperature: 0.5
   #top_p: 0.95
   #top_k: 64
   min_p: 0.1
@@ -13,7 +13,7 @@ SAMPLING_KWARGS:
     - "}"
   include_stop_str_in_output: true
   seed: 42
-  max_tokens: 4096 # 2048
+  max_tokens: # 2048
 
 LANG_CODES:
   eng_Latn: English

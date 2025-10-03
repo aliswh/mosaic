@@ -1,0 +1,2 @@
+It seems like Unsloth has trouble using the correct config file when using VLLM for inference on Gemma 3 models.
+For this reason, `config.json` files for each Gemma 3 model are stored in this directory and copied when saving a finetuned model.

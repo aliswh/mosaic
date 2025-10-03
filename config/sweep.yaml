@@ -1,21 +1,21 @@
-program: mcxr_train_sweep.py # Replace with the name of your Python training script
-method: bayes # Choose your search strategy: random, grid, or bayes
+program: train_sweep.py 
+method: bayes # random, grid, or bayes
 metric:
   name: eval_loss
-  goal: minimize # Whether to minimize or maximize this metric
+  goal: minimize 
 
 
 parameters:
   num_train_epochs:
-    values: [3, 5, 7] # Discrete values to try for epochs
+    values: [3, 5, 7] 
 
   warmup_ratio:
-    min: 0.0 # Minimum value
-    max: 0.1 # Maximum value
+    min: 0.0 
+    max: 0.1 
     distribution: uniform 
 
   eval_steps:
-    values: [20, 50, 100] # Discrete steps for evaluation
+    values: [20, 50, 100] 
 
   lr_scheduler_type:
     values: ["linear", "cosine"] 

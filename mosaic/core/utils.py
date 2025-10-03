@@ -1,342 +1,226 @@
-"""Utility functions for file and configuration management."""
+from datasets import concatenate_datasets, load_from_disk
+from transformers import EarlyStoppingCallback
+import re, ast, os, yaml
 
-import os
-from pathlib import Path
-from typing import Dict, List, Union
-import yaml
-import datasets
-import transformers
-import pandas as pd
-from transformers import TrainerCallback, TrainingArguments, TrainerState, TrainerControl
-from datasets import load_from_disk, concatenate_datasets
+def get_working_dir():
+    working_dir = os.path.dirname(os.path.abspath(__file__))
+    return working_dir
+
+def load_config(working_dir, config_path):
+    working_dir = os.path.dirname(os.path.dirname(working_dir))
+    config_path = os.path.join(working_dir, "config/" + config_path)
+    if config_path.endswith('.yaml') is False:
+        config_path += '.yaml'
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        return config
+    except Exception as e:
+        raise ValueError(f"Error loading config file: {e}")
+
+def save_dataset_to_disk(ds, file_path):
+    ds.save_to_disk(file_path)
+    print(f"Saved dataset (n={len(ds)}) to {file_path}")
 
 
-class ConfigLoader:
-    """Configuration loader and manager for MOSAIC."""
+def load_dataset(dataset_names, datasets_yaml, split='train'):
+    datasets = []
+    dataset_names = dataset_names.split(' ')
     
-    def __init__(self, config_dir: Union[str, Path] = None):
-        """
-        Initialize the configuration loader.
-        
-        Args:
-            config_dir: Path to configuration directory. If None, uses default package config.
-        """
-        if config_dir is None:
-            config_dir = Path(__file__).parent.parent.parent / "config"
-        self.config_dir = Path(config_dir)
-        
-    def load_yaml(self, yaml_file: str) -> Dict:
-        """
-        Load configurations from a YAML file.
-        
-        Args:
-            yaml_file: Name of the YAML file (with or without .yaml extension)
-            
-        Returns:
-            Dictionary containing the configuration
-            
-        Raises:
-            FileNotFoundError: If the YAML file doesn't exist
-            yaml.YAMLError: If the YAML file is invalid
-        """
-        if not yaml_file.endswith('.yaml'):
-            yaml_file += '.yaml'
-            
-        yaml_path = self.config_dir / yaml_file
-        if not yaml_path.exists():
-            raise FileNotFoundError(f"Configuration file not found: {yaml_path}")
-            
-        with yaml_path.open('r') as f:
-            try:
-                return yaml.safe_load(f)
-            except yaml.YAMLError as e:
-                raise yaml.YAMLError(f"Invalid YAML file {yaml_file}: {str(e)}")
-
-
-class DatasetLoader:
-    """Dataset loader and manager for MOSAIC."""
-    
-    def __init__(self, config_loader: ConfigLoader):
-        """
-        Initialize the dataset loader.
-        
-        Args:
-            config_loader: ConfigLoader instance for accessing dataset configurations
-        """
-        self.config_loader = config_loader
-        
-    def load_datasets(
-        self, 
-        dataset_names: Union[str, List[str]], 
-        split: str = 'train'
-    ) -> 'datasets.Dataset':
-        """
-        Load and concatenate multiple datasets.
-        
-        Args:
-            dataset_names: Space-separated string or list of dataset names
-            split: Dataset split to load ('train', 'val', 'test')
-            
-        Returns:
-            Concatenated dataset
-            
-        Raises:
-            ValueError: If no valid datasets are found
-        """
-        if isinstance(dataset_names, str):
-            dataset_names = dataset_names.split()
-            
-        datasets_config = self.config_loader.load_yaml('datasets')
-        datasets = []
-        
-        for name in dataset_names:
-            if name not in datasets_config:
-                print(f"Warning: Dataset '{name}' not found in configuration")
-                continue
-                
-            path = Path(datasets_config[name]['path'])
-            if not path.exists():
-                print(f"Warning: Dataset path not found: {path}")
-                continue
-                
-            try:
-                dataset = load_from_disk(str(path))
-                if split in dataset:
-                    datasets.append(dataset[split])
-                else:
-                    print(f"Warning: Split '{split}' not found in dataset '{name}'")
-            except Exception as e:
-                print(f"Error loading dataset '{name}': {str(e)}")
-                
-        if not datasets:
-            raise ValueError("No valid datasets found to load")
-            
-        return concatenate_datasets(datasets)
-
-
-def get_package_root() -> Path:
-    """Get the root directory of the MOSAIC package."""
-    return Path(__file__).parent.parent.parent
-
-def get_working_dir() -> str:
-    """Get the working directory for MOSAIC."""
-    return str(get_package_root())
-
-def load_config(working_dir: str, config_file: str) -> Dict:
-    """Load a configuration file."""
-    config_loader = ConfigLoader(Path(working_dir) / "config")
-    return config_loader.load_yaml(config_file)
-
-def load_dataset(dataset_names: Union[str, List[str]], datasets_config: Dict, split: str = "train") -> "datasets.Dataset":
-    """Load dataset(s) by name."""
-    if isinstance(dataset_names, str):
-        dataset_names = dataset_names.split()
-    
-    # Load paths config for base paths
-    paths_config = load_config(get_working_dir(), 'paths')
-    base_path = Path(paths_config['paths']['base']) / Path(paths_config['paths']['data'])
-    print(f"Loading datasets from base path: {base_path}")
-    
-    datasets_list = []
-    for name in dataset_names:
-        if name not in datasets_config:
-            raise ValueError(f"Dataset {name} not found in config")
-            
-        dataset_config = datasets_config[name]
-        csv_path = base_path / name / f"{name}.csv"
-        
-        print(f"Loading dataset from: {csv_path}")
-        # Read CSV file
-        df = pd.read_csv(csv_path)
-        # Create train/val/test splits
-        # Read full dataset only once
-        full_df = df.copy()
-        
-        # For small datasets (< 1000 rows), use split column if available
-        if 'split' in full_df.columns and len(full_df) < 1000:
-            print(f"Small dataset detected ({len(full_df)} rows). Using existing split column.")
-            available_splits = full_df['split'].unique()
-            print(f"Available splits: {available_splits}")
-            if split not in available_splits:
-                raise ValueError(f"Split '{split}' not found in dataset. Available splits: {available_splits}")
-            df = full_df[full_df['split'] == split].copy()
-            print(f"Selected {len(df)} rows for split '{split}'")
-            if len(df) == 0:
-                raise ValueError(f"No rows found for split '{split}'")
-        else:
-            # Generate consistent train/val/test splits for larger datasets
-            if len(full_df) < 10:
-                # For very small datasets, use all data for all splits
-                print(f"Warning: Dataset too small ({len(full_df)} rows). Using all data for {split} split.")
-                df = full_df.copy()
+    for dataset_name in dataset_names:
+        path = datasets_yaml[dataset_name]['path']
+        dataset = load_from_disk(path)
+        try: 
+            if split != 'train':
+                datasets.append(dataset[split])
             else:
-                # Normal train/val/test split for reasonable sized datasets
-                train_idx = full_df.sample(frac=0.8, random_state=42).index
-                remain_df = full_df.drop(train_idx)
-                val_idx = remain_df.sample(frac=0.5, random_state=42).index
-                test_idx = remain_df.drop(val_idx).index
-                
-                if split == 'train':
-                    df = full_df.loc[train_idx]
-                elif split == 'val':
-                    df = full_df.loc[val_idx]
-                elif split == 'test':
-                    df = full_df.loc[test_idx]
-        
-        # Select the requested split
-        # Determine which split to use
-        print(f"Processing dataset with {len(full_df)} rows")
-        
-        if 'split' in full_df.columns and len(full_df) < 1000:
-            # For small datasets, use the existing split column
-            print("Using existing split column")
-            df = full_df[full_df['split'] == split].copy()
-            print(f"Selected {len(df)} rows for split '{split}'")
-        else:
-            # For larger datasets or when no split column exists
-            if len(full_df) < 10:
-                # Use all data for all splits if too small
-                print(f"Warning: Dataset too small ({len(full_df)} rows). Using all data for {split} split.")
-                df = full_df.copy()
-            else:
-                # Normal train/val/test split
-                print("Generating train/val/test split")
-                train_idx = full_df.sample(frac=0.8, random_state=42).index
-                remain_df = full_df.drop(train_idx)
-                val_idx = remain_df.sample(frac=0.5, random_state=42).index
-                test_idx = remain_df.drop(val_idx).index
-                
-                if split == 'train':
-                    df = full_df.loc[train_idx].copy()
-                elif split == 'val':
-                    df = full_df.loc[val_idx].copy()
-                elif split == 'test':
-                    df = full_df.loc[test_idx].copy()
-                else:
-                    raise ValueError(f"Invalid split: {split}. Must be one of: train, val, test")
-            
-        # Convert DataFrame to Dataset
-        dataset = datasets.Dataset.from_pandas(df)
-        datasets_list.append(dataset)
-    
-    return concatenate_datasets(datasets_list)
+                #datasets.append(dataset[split].select(range(0, 80)))
+                datasets.append(dataset[split])
 
-def process_dataset(dataset: "datasets.Dataset", tokenizer, model_tag: str) -> "datasets.Dataset":
-    """Process dataset for training."""
-    # Convert 'report' column to 'text' column if it exists
-    if 'report' in dataset.column_names and 'text' not in dataset.column_names:
-        dataset = dataset.rename_column('report', 'text')
+        except: print(f'No {split} dataset for {dataset_name}')
     
-    def _format_chat(text):
-        # Extract and clean findings/observations
-        if "FINAL REPORT:" in text:
-            parts = text.split("FINAL REPORT:", 1)
-            findings = parts[1].strip()
-        else:
-            findings = text.strip()
-            
-        # Clean up the findings text
-        findings = findings.replace('\n', ' ').strip()
-        findings = ' '.join(findings.split())  # Normalize whitespace
+    dataset = concatenate_datasets(datasets)
+    return dataset
+
+
+def clean_string(text):
+    cleaned_text =  " ".join(text.split())
+    cleaned_text = re.sub(r"_{2,}", "_", cleaned_text)
+    return cleaned_text
+
+
+def format_report_into_prompt(examples, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en'):
+    """ BATCHED = FALSE!"""
+    report, labels, classes, findings = examples['report'], examples['labels'], examples['classes'], examples['findings']
+
+    report = clean_string(report)
+
+    request = [
+        "You are a helpful radiology assistant. ",
+        "Given a radiology report, classify each abnormality into a class. ",
+        "Output a valid JSON with each abnormality as key, and the class as value. ",
+        f"The keys must be {findings}. ",
+        f"The values can be one of {classes}. The values have the following interpretation: ",
         
-        # Create chat messages in Unsloth format
-        messages = [
-            {"role": "user", "content": "As a radiologist, please analyze these chest x-ray findings in detail:\n" + findings},
-            {"role": "assistant", "content": findings}  # Response is the processed findings
+        # positive mentions
+        "(1) the abnormality was positively mentioned in the report; " if 0 in classes 
+        else "(1) the abnormality was mentioned, even with uncertainty, in the report " + \
+        "e.g. 'A large pleural effusion', 'The cardiac contours are stable.', 'The cardiac size cannot be evaluated.'; ",
+        
+        # negative mentions
+        "(2) the abnormality was negatively mentioned in the report; e.g. 'No pneumothorax.'; " if 2 in classes else "", 
+        
+        # uncertain mention
+        "(0) the abnormality was either: mentioned with uncertainty in the report, " + \
+        "or mentioned with ambiguous language in the report and it is unclear " + \
+        "if the pathology exists or not, e.g. Explicit uncertainty: 'The cardiac size cannot be evaluated.', " + \
+        "Ambiguous language: 'The cardiac contours are stable.';" if 0 in classes else "",
+        
+        # no mention
+        " (-1) the abnormality was not mentioned in the report." if 2 in classes 
+        else " (-1) the abnormality was not mentioned in the report, or the abnormality was " + \
+        "negatively mentioned in the report; e.g. 'No pneumothorax.'. ",
         ]
-        
-        # Apply appropriate chat template based on model type
-        # The tokenizer will handle the actual template formatting
-        formatted = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,  # Important: we want the text template, not tokens
-            add_generation_prompt=False  # Don't add extra generation tokens
-        )
-        return formatted
+
+    request = ''.join(request)
+
+    description_tag = f'description_{description_language}'
+    if include_description and description_tag in examples:
+        description = examples[description_tag]
+        description = '\nEvery abnormality can be described as:' + str(description)
+        request += description
+
+    if few_shot:
+        fs_prompt = "\nHere are some examples: "
+        fs_prompt += clean_string(examples['fs_examples'])
+        request += fs_prompt
+
+    assistant = {
+            "role": "assistant",
+            "content": f"Answer: json {'' if is_test else labels}"
+        }
     
-    # Format all examples with chat template
-    print("Applying chat templates...")
+    if "llama" in model_tag.lower():
+        system = {
+                "role": "system",
+                "content": request
+            }
+        user = {
+            "role": "user",
+            "content": f"\nText: <<<{report}>>>",
+        }
+        prompt = [system, user, assistant]
+
+    elif "gemma" in model_tag or "mosaic" in model_tag:
+        user = {
+            'content': f"{request}\nText: <<<{report}>>>",
+            'role': 'user'
+            }
+        prompt = [user, assistant]
+
+    else: raise ValueError(f"Model {model_tag} not supported.")
+    
+    return_dict = {"conversations": prompt, 'source': model_tag}
+    return return_dict
+
+
+def check_double_sot(example):
+    match="<start_of_turn>model\nAnswer: json<end_of_turn>\n<start_of_turn>model"
+    corrected_match="<start_of_turn>model\nAnswer: json"
+    result = []
+    for text in example["text"]:
+        result.append(text.replace(match, corrected_match))
+    return {'text':result}
+
+
+def apply_chat_template_inner(examples, apply_template_fn, fn_kwargs):
+    # nested functions can't be hashed properly
+    texts = apply_template_fn(examples["conversations"], **fn_kwargs)
+    return {"text": texts}
+
+
+def apply_chat_template_fn(dataset, apply_template_fn, fn_kwargs={}, model_tag=""):
     dataset = dataset.map(
-        lambda example: {'text': _format_chat(example['text'])},
-        desc="Formatting chat examples",
-        load_from_cache_file=False
+        lambda examples: apply_chat_template_inner(examples, apply_template_fn, fn_kwargs),
+        batched=True
     )
-    
-    # Tokenize all examples without padding
-    def _tokenize_function(examples):
-        return tokenizer(
-            examples["text"],
-            truncation=True,
-            max_length=512,
-            padding=False,  # No padding - let trainer handle it
-            return_tensors=None
-        )
-    
-    print("Tokenizing dataset...")
+    if 'gemma' in model_tag: dataset = dataset.map(check_double_sot, batched=True)
+    return dataset
+
+
+def process_dataset(dataset, tokenizer, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en'):
+    apply_template_fn = tokenizer.apply_chat_template
     dataset = dataset.map(
-        _tokenize_function,
-        batched=True,
-        remove_columns=[col for col in dataset.column_names if col != 'text'],
-        desc="Tokenizing",
-        load_from_cache_file=False
+        format_report_into_prompt, batched = False, fn_kwargs={
+            'model_tag':model_tag, 'is_test':is_test, 'few_shot':few_shot,
+            'include_description':include_description, 'description_language':description_language
+            },
+        remove_columns = dataset.column_names
     )
-    print("Tokenization complete!")
-    
+    dataset = apply_chat_template_fn(dataset, apply_template_fn, fn_kwargs={'tokenize':False, 'add_generation_prompt':is_test})
     return dataset
-    
-    return dataset
-    
-    # Tokenize all texts
-    print("Tokenizing dataset...")
-    processed = dataset.map(
-        _tokenize_function,
-        batched=True,
-        remove_columns=[col for col in dataset.column_names if col != 'text']
+
+
+def process_dataset_vllm(dataset, llm, model_tag, few_shot=False, include_description=False, description_language='en'):
+    apply_template_fn = llm.llm_engine.tokenizer.tokenizer.apply_chat_template
+    dataset = dataset.map(
+        format_report_into_prompt, batched = False, fn_kwargs={
+            'model_tag':model_tag, 'is_test':True, 'few_shot': few_shot,
+            'include_description':include_description, 'description_language':description_language
+            },
+        remove_columns = dataset.column_names
     )
-    print("Tokenization complete!")
-    
-    return processed
-
-def process_dataset_vllm(dataset, tokenizer, model_tag: str, include_description: bool = False, description_language: str = "en", few_shot: bool = False):
-    """Process dataset for VLLM inference."""
+    dataset = apply_chat_template_fn(
+        dataset, apply_template_fn, model_tag=model_tag,
+        fn_kwargs={'tokenize':False, 'add_generation_prompt':True})
     return dataset
 
-def decode_output_vllm(output: str, empty_json: dict, idx: int, classes: list) -> dict:
-    """Decode model output from VLLM."""
-    return empty_json.copy()
 
-class MinEpochsEarlyStoppingCallback(TrainerCallback):
-    """Early stopping callback that enforces a minimum number of epochs."""
-    
-    def __init__(self, min_epochs=1, early_stopping_patience=5, early_stopping_threshold=0.001):
-        self.patience = early_stopping_patience
+class MinEpochsEarlyStoppingCallback(EarlyStoppingCallback):
+    def __init__(self, min_epochs, early_stopping_patience=0, early_stopping_threshold=0.0):
         self.min_epochs = min_epochs
-        self.threshold = early_stopping_threshold
-        self.early_stopping_patience_counter = 0
-        self.best_metric = None
-        
-    def on_evaluate(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, metrics, **kwargs):
-        """Called after evaluation."""
-        epoch = state.epoch
-        
-        # Don't start early stopping until min_epochs reached
-        if epoch < self.min_epochs:
+        super().__init__(early_stopping_patience=early_stopping_patience, early_stopping_threshold=early_stopping_threshold)
+
+    def on_evaluate(self, args, state, control, metrics, **kwargs):
+        metric_to_check = args.metric_for_best_model
+        if not metric_to_check.startswith("eval_"):
+            metric_to_check = f"eval_{metric_to_check}"
+        metric_value = metrics.get(metric_to_check)
+
+        if metric_value is None:
+            print(
+                f"early stopping required metric_for_best_model, but did not find {metric_to_check} so early stopping"
+                " is disabled"
+            )
             return
-            
-        eval_metric = metrics.get("eval_loss")
-        if eval_metric is None:
-            return
-            
-        if self.best_metric is None:
-            self.best_metric = eval_metric
-            return
-            
-        relative_decrease = (self.best_metric - eval_metric) / abs(self.best_metric)
         
-        if relative_decrease > self.threshold:
-            self.best_metric = eval_metric
-            self.early_stopping_patience_counter = 0
-        else:
-            self.early_stopping_patience_counter += 1
-            if self.early_stopping_patience_counter >= self.patience:
-                control.should_training_stop = True
+        if state.epoch >=self.min_epochs:
+            self.check_metric_value(args, state, control, metric_value)
+            if self.early_stopping_patience_counter >= self.early_stopping_patience:
+                    control.should_training_stop = True
+
+
+def decode_output_vllm(response, empty_json={}, idx=None, classes=[-1, 0, 1, 2]):
+    invalid_response = lambda x, reason, idx: print(f'Invalid generation, {reason} [{idx}]: {x}') or empty_json
+
+    json_response = re.findall(r'\{[^{}]*\}', response)
+    if not json_response: return invalid_response(response, 'JSON not found', idx)
+    
+    try: output = dict(ast.literal_eval(json_response[-1]))
+    except: return invalid_response(response, 'invalid JSON', idx)
+
+    # fix key issues. Add 'not mentioned' as default class for missing keys
+    if empty_json.keys() != output.keys(): 
+        # add keys that are missing
+        output = {**{k:None for k in empty_json.keys() if k not in output}, **output}
+        # remove keys that are not in the expected format
+        output = {k: v for k, v in output.items() if k in empty_json.keys()}
+
+    classes = [None] + [str(c) for c in classes] + [float(c) for c in classes] + [int(c) for c in classes]
+    
+    if not all([v in classes for v in output.values()]): # check values
+        return invalid_response(response, 'invalid prediction', idx)
+    else:
+        output = {k: int(v) if v is not None else v for k, v in output.items()}
+    
+    return output

@@ -1,7 +1,12 @@
 # package specific
 unsloth_compiled_cache/
 outputs/
+!outputs/ppl_mosaic/
+!outputs/ppl_mteb/
 wandb/
+ppl_debug.csv
+data/
+!data/mimic_demo/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

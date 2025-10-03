@@ -2,7 +2,6 @@ from vllm import LLM, SamplingParams
 import argparse
 from tqdm import tqdm 
 import warnings
-import os, yaml
 from datasets import load_from_disk
 from datasets import concatenate_datasets
 from mosaic.core.utils import get_working_dir, load_config

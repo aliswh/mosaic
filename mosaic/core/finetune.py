@@ -1,12 +1,10 @@
 import os
 import torch
 import wandb
-import pandas as pd
-import ast, shutil, argparse
+import shutil, argparse
 from unsloth import FastModel
-from unsloth.chat_templates import get_chat_template, train_on_responses_only
+from unsloth.chat_templates import train_on_responses_only
 from trl import SFTTrainer, SFTConfig
-from transformers import PrinterCallback
 from mosaic.core.utils import get_working_dir, load_config, load_dataset, process_dataset, MinEpochsEarlyStoppingCallback
 
 
@@ -63,7 +61,6 @@ def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint
 
     # Log configuration
     chat_template = getattr(tokenizer, 'chat_template', None)
-    print(f"Using chat template: {chat_template}")
     
     config = {
         'model_config': model_config,
@@ -87,10 +84,9 @@ def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint
             'truncation_side': getattr(tokenizer, 'truncation_side', None),
         }
         
-    wandb.log(config)
+    if wandb_log: wandb.log(config)
     return model, tokenizer
 
-    return model, tokenizer
 
 def init_trainer(model_config, training_config, model_training_config, logging_config, model, tokenizer, train_dataset, val_dataset, run_name, checkpoints_path, train_from_checkpoint=False):
     """
@@ -110,7 +106,7 @@ def init_trainer(model_config, training_config, model_training_config, logging_c
     """
 
     EARLY_STOP = training_config["CALLBACK_KWARGS"]['min_epochs'] > 0
-    if not EARLY_STOP: print("No early stopping"); wandb.log({'early_stopping': 'No early stopping'})
+    if not EARLY_STOP: print("No early stopping")
     
     gradient_accumulation_steps = model_training_config["device_batch_size"] // model_config['batch_size']
     
@@ -136,13 +132,14 @@ def init_trainer(model_config, training_config, model_training_config, logging_c
         ),
     )
 
-    wandb.log({
-        'batch_size': model_config['batch_size'],
-        'gradient_accumulation_steps': gradient_accumulation_steps,
-        'seed': training_config["SEED"],
-        'early_stop_args': training_config["CALLBACK_KWARGS"] if EARLY_STOP else {},
-        'training_args': {**training_config["TRAINING_KWARGS"], **model_training_config}
-    })
+    if wandb_log:
+        wandb.log({
+            'batch_size': model_config['batch_size'],
+            'gradient_accumulation_steps': gradient_accumulation_steps,
+            'seed': training_config["SEED"],
+            'early_stop_args': training_config["CALLBACK_KWARGS"] if EARLY_STOP else {},
+            'training_args': {**training_config["TRAINING_KWARGS"], **model_training_config}
+        })
 
     trainer = train_only_on_responses(trainer, model_config)
     return trainer
@@ -197,10 +194,11 @@ def gpu_stats():
     gpu_stats = torch.cuda.get_device_properties(0)
     start_gpu_memory = round(torch.cuda.max_memory_reserved() / 1024 / 1024 / 1024, 3)
     max_memory = round(gpu_stats.total_memory / 1024 / 1024 / 1024, 3)
-    wandb.log({
-        "start_gpu_memory": start_gpu_memory,
-        "max_memory": max_memory,
-    })
+    if wandb_log:
+        wandb.log({
+            "start_gpu_memory": start_gpu_memory,
+            "max_memory": max_memory,
+        })
     return start_gpu_memory, max_memory
 
 def training_stats(trainer_stats, start_gpu_memory, max_memory):
@@ -209,27 +207,29 @@ def training_stats(trainer_stats, start_gpu_memory, max_memory):
     used_percentage = round(used_memory / max_memory * 100, 3)
     lora_percentage = round(used_memory_for_lora / max_memory * 100, 3)
 
-    wandb.log({
-        "runtime_seconds": trainer_stats.metrics['train_runtime'],
-        "runtime_minutes": round(trainer_stats.metrics['train_runtime']/60, 2),
-        "used_memory": used_memory,
-        "used_memory_for_lora": used_memory_for_lora,
-        "used_percentage": used_percentage,
-        "lora_percentage": lora_percentage
-    })
+    if wandb_log:
+        wandb.log({
+            "runtime_seconds": trainer_stats.metrics['train_runtime'],
+            "runtime_minutes": round(trainer_stats.metrics['train_runtime']/60, 2),
+            "used_memory": used_memory,
+            "used_memory_for_lora": used_memory_for_lora,
+            "used_percentage": used_percentage,
+            "lora_percentage": lora_percentage
+        })
 
 
 if __name__ == "__main__":
     argparse = argparse.ArgumentParser()
     argparse.add_argument('-m', '--model_name', help='HF model tag', required=True)
     argparse.add_argument('-ct', '--config_tag', help='Config tag', required=True)
-    argparse.add_argument('-p', '--project_name', help='Wandb project name', required=True)
+    argparse.add_argument('-p', '--project_name', help='Wandb project name', required=False, default=None)
     argparse.add_argument('-et', '--experiment_tag', help='Additional information', required=False, default='')
     argparse.add_argument('-tds', '--train_dataset_names', help='Dataset name(s)', required=True)
     argparse.add_argument('-vds', '--valid_dataset_names', help='Dataset name(s)', required=True)
     argparse.add_argument('-c', '--checkpoint', help='Checkpoint path', required=False, default=False)
     argparse.add_argument('-rt', '--resume_training', help='Resume from stopped training', required=False, default=False)
     argparse.add_argument('-cs', '--check_prompts_size', help='Check prompts size', required=False, default=False)
+    argparse.add_argument('-o', '--output_dir', help='Output directory', required=True)
     args = argparse.parse_args()
 
     working_dir = get_working_dir()
@@ -245,6 +245,12 @@ if __name__ == "__main__":
     valid_dataset_names = args.valid_dataset_names
     checkpoint = args.checkpoint
     config_tag = args.config_tag
+    project_name = args.project_name
+    output_dir = args.output_dir
+
+    global wandb_log
+    if project_name: wandb_log = True
+    else: wandb_log = False
 
     model_config = model_config[model_name]
     model_tag = model_config['model_tag']
@@ -255,11 +261,11 @@ if __name__ == "__main__":
     experiment_name = f"{model_name}_{str(train_dataset_names.replace(' ', '-'))}{args.experiment_tag}"
     if checkpoint: 
         experiment_name = f"{experiment_name}_from-{os.path.basename(checkpoint)}"
-    wandb.init(project=args.project_name, name=experiment_name)
+    if wandb_log: wandb.init(project=project_name, name=experiment_name)
     start_gpu_memory, max_memory = gpu_stats()
 
-    models_save_path = f"{os.path.dirname(working_dir)}/output/models/{experiment_name}/"
-    checkpoints_path = f"{os.path.dirname(working_dir)}/output/checkpoints/{experiment_name}"
+    models_save_path = f"{output_dir}/models/{experiment_name}/"
+    checkpoints_path = f"{output_dir}/checkpoints/{experiment_name}"
     if not os.path.exists(models_save_path): os.makedirs(models_save_path)
     if not os.path.exists(checkpoints_path): os.makedirs(checkpoints_path)
 
