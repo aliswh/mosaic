@@ -116,6 +116,7 @@ if __name__ == "__main__":
         trained_model_path = models_folder + '/models/' + trained_model_tag
     else:
         trained_model_tag = f"{model_name}_{str(train_dataset_names.replace(' ', '-'))}"
+        print("Trained model tag:", trained_model_tag)
         if checkpoint: 
             trained_model_tag = f"{trained_model_tag}_from-{os.path.basename(checkpoint)}"
         trained_model_path = models_folder + '/models/' + trained_model_tag + args.experiment_tag

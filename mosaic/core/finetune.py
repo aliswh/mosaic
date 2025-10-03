@@ -184,9 +184,11 @@ def save_model(model, tokenizer, save_path: str, model_config: dict):
         model_config: The configuration of the model.
     """
     model.save_pretrained_merged(save_path, tokenizer) # vllm doesn't load gemma 3 lora adapters
+    print(f"Model saved to {save_path}")
     # TODO unsloth doesn't generate the right config for gemma 3 models, so copy (on March 27, 2025) 
     if 'gemma' in model_name:
-        config_path = working_dir + f"/config/gemma/{model_name}/config.json"
+        working_dir = os.path.dirname(os.path.dirname(working_dir))
+        config_path = os.path.join(working_dir, f"/config/gemma/{model_name}/config.json")
         shutil.copy(config_path, save_path)
 
 

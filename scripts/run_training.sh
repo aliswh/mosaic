@@ -6,7 +6,7 @@ MODEL_TAG="medgemma-4b"
 WANDB_PROJECT=None # Set to None to disable wandb logging by default
 TRAIN_DATASETS=("mimic") # A list like ("mimic" "padchest" "casia")
 VALID_DATASETS=("mimic") # A list like ("mimic" "padchest" "casia")
-OUTPUT_DIR="outputs/${MODEL_TAG}"
+OUTPUT_DIR="outputs/"
 
 # Help message
 usage() {

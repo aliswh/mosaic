@@ -1,7 +1,7 @@
 VLLM_KWARGS:
   gpu_memory_utilization: 0.9
-  max_model_len: MAX_SEQ_LENGTH
-  #max_num_seqs: 64
+  max_model_len: 2048
+  max_num_seqs: 64
   max_lora_rank: 64
 
 SAMPLING_KWARGS:
@@ -13,7 +13,7 @@ SAMPLING_KWARGS:
     - "}"
   include_stop_str_in_output: true
   seed: 42
-  max_tokens: # 2048
+  max_tokens: 2048
 
 LANG_CODES:
   eng_Latn: English
