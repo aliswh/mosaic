@@ -80,7 +80,12 @@ def ppl_model(model, tokenizer, dataset, text_col="text", debug=True):
     for s in tqdm(range(len(dataset[text_col]))):
         sentence = dataset[text_col][s]
         encodings = tokenizer(sentence, return_tensors="pt")
-        input_ids = encodings.input_ids.to("cuda")
+        input_ids = encodings.input_ids[0]  # single sequence
+        special_ids = tokenizer.all_special_ids if hasattr(tokenizer, "all_special_ids") else []
+
+        # Keep only real tokens (skip special tokens)
+        real_token_indices = [i for i, tid in enumerate(input_ids) if tid not in special_ids]
+        input_ids = input_ids[real_token_indices].unsqueeze(0).to("cuda")  # add batch dim
         seq_len = input_ids.size(1)
         prev_end_loc = 0
 
@@ -145,10 +150,12 @@ def compute_ppl(model, tokenizer, dataset, text_col, debug=False):
     # Format the dataset
     def formatting_prompts_func(examples):
         messages = [{"role": "user", "content": text} for text in examples[text_col]]
-        texts = [
-            tokenizer.apply_chat_template([convo], tokenize=False, add_generation_prompt=False)
-            for convo in messages
-        ]
+        #texts = [
+        #    tokenizer.apply_chat_template([convo], tokenize=False, add_generation_prompt=False)
+        #    for convo in messages
+        #]
+        texts = examples[text_col]
+
         return {text_col: texts}
 
     dataset = dataset.map(formatting_prompts_func, batched=True)
