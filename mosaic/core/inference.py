@@ -6,7 +6,13 @@ from pathlib import Path
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
-from mosaic.core.utils import process_dataset_vllm, decode_output_vllm, load_config, get_working_dir
+from mosaic.core.utils import (
+    process_dataset_vllm,
+    decode_output_vllm,
+    load_config,
+    get_working_dir,
+    normalize_wandb_project_name,
+)
 from mosaic.core.evals import get_F1_scores
 import wandb
 import argparse, os
@@ -89,7 +95,7 @@ if __name__ == "__main__":
     include_description = True if args.include_description == 'true' else False
     description_language = args.description_language # 'en' or 'da'
     checkpoint = args.checkpoint
-    project_name = args.project_name
+    project_name = normalize_wandb_project_name(args.project_name)
 
     wdir = get_working_dir()
     datasets_yaml = load_config(wdir, 'datasets.yaml')
@@ -191,4 +197,3 @@ if __name__ == "__main__":
             outputs.to_csv(save_path + f'predictions.csv', index=False)
 
     print("Evals saved in ", save_path)
-
