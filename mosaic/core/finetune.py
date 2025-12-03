@@ -5,7 +5,14 @@ import shutil, argparse
 from unsloth import FastModel
 from unsloth.chat_templates import train_on_responses_only
 from trl import SFTTrainer, SFTConfig
-from mosaic.core.utils import get_working_dir, load_config, load_dataset, process_dataset, MinEpochsEarlyStoppingCallback
+from mosaic.core.utils import (
+    get_working_dir,
+    load_config,
+    load_dataset,
+    process_dataset,
+    MinEpochsEarlyStoppingCallback,
+    normalize_wandb_project_name,
+)
 
 
 def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint: str = None) -> tuple:
@@ -247,7 +254,7 @@ if __name__ == "__main__":
     valid_dataset_names = args.valid_dataset_names
     checkpoint = args.checkpoint
     config_tag = args.config_tag
-    project_name = args.project_name
+    project_name = normalize_wandb_project_name(args.project_name)
     output_dir = args.output_dir
 
     global wandb_log

@@ -2,6 +2,14 @@ from datasets import concatenate_datasets, load_from_disk
 from transformers import EarlyStoppingCallback
 import re, ast, os, yaml
 
+def normalize_wandb_project_name(project_name):
+    """Return None when a wandb project should be considered disabled."""
+    if project_name is None:
+        return None
+    if isinstance(project_name, str) and project_name.strip().lower() in {"", "none", "null"}:
+        return None
+    return project_name
+
 def get_working_dir():
     working_dir = os.path.dirname(os.path.abspath(__file__))
     return working_dir

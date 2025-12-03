@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Ensure imports work regardless of where the script is called from
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH}"
+
 # Default values
 EXP="m" # configuration file for experiment
 MODEL_TAG="medgemma-4b"
@@ -57,7 +63,7 @@ conda activate mosaic
 mkdir -p "$OUTPUT_DIR"
 
 # Check if data directory exists
-DATA_DIR="/home/alice/work/mosaic/data/mimic"
+DATA_DIR="$PROJECT_ROOT/data/mimic"
 if [ ! -d "$DATA_DIR" ]; then
     echo "Error: MIMIC dataset directory not found at: $DATA_DIR"
     echo "Please ensure you have:"
