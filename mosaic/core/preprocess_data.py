@@ -40,13 +40,14 @@ class _TextCleaner:
     @staticmethod
     def clean(df: pd.DataFrame, column: str = "report") -> pd.DataFrame:
         cleaned = df.copy()
-        cleaned[column] = (
+        cleaned["report"] = (
             cleaned[column]
             .astype(str)
             .str.replace("\n", " ", regex=False)
             .str.replace("\t", " ", regex=False)
             .str.replace("\r", " ", regex=False)
         )
+        if column != "report": cleaned = cleaned.drop(column, axis=1)
         return cleaned
 
 
@@ -497,9 +498,40 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
     base_path = Path(base_path)
     output_root = Path(output_root) 
     writer = _DatasetWriter(output_root)
-    for split in ["test", "train", "val"]:
-        X, y = lambda x: x
-        writer.write_report_label_rows(split, X, y, index=False)
+    splitter = _Splitter()
+    cleaner = _TextCleaner()
+
+    X = pd.read_csv(base_path / "X.csv")
+    y = pd.read_csv(base_path / "y.csv")
+    y = y.fillna(-1)
+
+    y = y.replace({3:1, 4:0})
+
+    X = cleaner.clean(X[["text"]], column="text")
+    X = X.reset_index(drop=True)
+    y = y.drop(columns=["Study_Series_ID"])
+    y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
+
+    print(len(X), len(y))
+
+    X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(X, y, test_size=0.3, val_size=100)
+
+    for name, df in {
+        "X_train": X_train,
+        "X_val": X_val,
+        "X_test": X_test,
+        "y_train": y_train,
+        "y_val": y_val,
+        "y_test": y_test,
+    }.items():
+        writer.write_frame(name, df, index=False)
+
+    for name, (x_df, y_df) in {
+        "train": (X_train, y_train),
+        "val": (X_val, y_val),
+        "test": (X_test, y_test),
+    }.items():
+        writer.write_report_label_rows(name, x_df, y_df, index=False)
 
 
 
@@ -512,6 +544,7 @@ DATASET_FUNCTIONS = {
     "padchest": preprocess_padchest,
     "danskcxr": preprocess_danskcxr,
     "reflacx": preprocess_reflacx,
+    "danskmri" : preprocess_danskmri,
 }
 
 

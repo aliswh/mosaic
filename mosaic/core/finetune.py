@@ -2,8 +2,6 @@ import os
 import torch
 import wandb
 import shutil, argparse
-from unsloth import FastModel
-from unsloth.chat_templates import train_on_responses_only
 from trl import SFTTrainer, SFTConfig
 from mosaic.core.utils import (
     get_working_dir,
@@ -228,6 +226,10 @@ def training_stats(trainer_stats, start_gpu_memory, max_memory):
 
 
 if __name__ == "__main__":
+    # avoid import on unsloth into other scripts if not necessary
+    from unsloth import FastModel
+    from unsloth.chat_templates import train_on_responses_only
+
     argparse = argparse.ArgumentParser()
     argparse.add_argument('-m', '--model_name', help='HF model tag', required=True)
     argparse.add_argument('-ct', '--config_tag', help='Config tag', required=True)
