@@ -167,7 +167,7 @@ def _parse_kwargs(pairs: List[str]) -> Dict[str, str]:
 def preprocess_mimic(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     """Prepare MIMIC-CXR splits."""
     base_path = Path(base_path)
-    output_root = Path(output_root) if output_root else base_path / "data/mimic"
+    output_root = Path(output_root) 
     writer = _DatasetWriter(output_root)
     cleaner = _TextCleaner()
     label_proc = _LabelProcessor()
@@ -264,7 +264,7 @@ def preprocess_mimic(base_path: Path, output_root: Optional[Path] = None, **kwar
 
 def preprocess_casia(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     base_path = Path(base_path)
-    output_root = Path(output_root) if output_root else base_path / "data/casia"
+    output_root = Path(output_root) 
     writer = _DatasetWriter(output_root)
     cleaner = _TextCleaner()
     splitter = _Splitter()
@@ -338,7 +338,7 @@ def _padchest_frame(reports_en: pd.Series, reports_es: pd.Series, label_set: Lis
 
 
 def preprocess_padchest(base_path: Path, output_root: Optional[Path] = None, min_occurrence: int = 150, **kwargs) -> None:
-    """Process PadChest most-frequent labels subset (fresh split)."""
+    """Process PadChest most-frequent labels subset."""
     base_path = Path(base_path)
     base_output = Path(output_root) if output_root else base_path / "data/padchest"
     base_output.mkdir(parents=True, exist_ok=True)
@@ -392,7 +392,7 @@ def preprocess_padchest(base_path: Path, output_root: Optional[Path] = None, min
         writer_en.write_report_label_rows(name, X.to_frame(name="report"), y, index=False)
 
 
-def _load_dansk_split(base_path: Path, split: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _load_danskcxr_split(base_path: Path, split: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
     imp_findings = [
         "Atelectasis",
         "Cardiomegaly",
@@ -428,17 +428,17 @@ def _load_dansk_split(base_path: Path, split: str) -> Tuple[pd.DataFrame, pd.Dat
 
 def preprocess_danskcxr(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     base_path = Path(base_path)
-    output_root = Path(output_root) if output_root else Path("data/danskcxr_mf")
+    output_root = Path(output_root) 
     writer = _DatasetWriter(output_root)
     for split in ["test", "train", "val"]:
-        X, y = _load_dansk_split(base_path, split)
+        X, y = _load_danskcxr_split(base_path, split)
         writer.write_report_label_rows(split, X, y, index=False)
 
 
 def preprocess_reflacx(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     """Prepare Reflacx datasets with train/val/test splits for subsets i and ii."""
     base_path = Path(base_path)
-    output_root = Path(output_root) if output_root else Path("/home/alice/work/data/languages/en/reflacx")
+    output_root = Path(output_root) 
     writer = _DatasetWriter(output_root)
     reports_map = {}
     for patient in os.listdir(base_path):
@@ -490,6 +490,17 @@ def preprocess_reflacx(base_path: Path, output_root: Optional[Path] = None, **kw
         "ii_test": (B_X_test, B_y_test),
     }.items():
         writer.write_report_label_rows(name, X, y, index=False)
+
+
+
+def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
+    base_path = Path(base_path)
+    output_root = Path(output_root) 
+    writer = _DatasetWriter(output_root)
+    for split in ["test", "train", "val"]:
+        X, y = lambda x: x
+        writer.write_report_label_rows(split, X, y, index=False)
+
 
 
 

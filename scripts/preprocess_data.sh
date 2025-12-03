@@ -15,9 +15,9 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH:-}"
 
-FUNCTION_NAME=""
-INPUT_DIR="/home/alice/mosaic/input_data"
-OUTPUT_DIR="/home/alice/mosaic/data"
+FUNCTION_NAME="mimic"
+INPUT_DIR="/home/alice/work/data/"
+OUTPUT_DIR="/home/alice/mosaic/test_data"
 EXTRA_ARGS=()
 
 while getopts "f:i:o:k:h" opt; do
