@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
+from datasets import Dataset, DatasetDict
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.utils import indexable, _safe_indexing
 from sklearn.utils.validation import _num_samples
@@ -131,9 +132,22 @@ class _Splitter:
 class _DatasetWriter:
     """Small helper to save CSVs consistently."""
 
-    def __init__(self, output_root: Path):
+    def __init__(
+        self,
+        output_root: Path,
+        *,
+        classes: Optional[Iterable[int]] = None,
+        findings: Optional[Iterable[str]] = None,
+        language: Optional[str] = None,
+    ):
         self.output_root = output_root
         self.output_root.mkdir(parents=True, exist_ok=True)
+        self.dataset_splits: Dict[str, Dataset] = {}
+        self.dataset_meta = {
+            "classes": list(classes) if classes is not None else None,
+            "findings": list(findings) if findings is not None else None,
+            "language": language,
+        }
 
     def write_frame(self, name: str, df: pd.DataFrame, *, index: bool = False) -> Path:
         path = self.output_root / f"{name}.csv"
@@ -142,13 +156,45 @@ class _DatasetWriter:
         return path
 
     def write_report_label_rows(
-        self, name: str, X: pd.DataFrame, y: pd.DataFrame, *, index: bool = False
+        self,
+        name: str,
+        X: pd.DataFrame,
+        y: pd.DataFrame,
+        *,
+        index: bool = False,
+        classes: Optional[Iterable[int]] = None,
+        findings: Optional[Iterable[str]] = None,
+        language: Optional[str] = None,
     ) -> Path:
-        labels = y.T.to_dict()
-        reports = X.T.to_dict()
-        dataset = {key: {"report": reports[key]["report"], "labels": value} for key, value in labels.items()}
-        df = pd.DataFrame(dataset).T
-        return self.write_frame(name, df, index=index)
+        df = X[["report"]].copy()
+        df["labels"] = y.apply(
+            lambda row: {k: int(v) if pd.notna(v) else -1 for k, v in row.to_dict().items()},
+            axis=1,
+        )
+        df["labels"] = df["labels"].apply(lambda lbl: json.dumps(lbl, sort_keys=True))
+
+        csv_path = self.write_frame(name, df, index=index)
+
+        split_meta = {
+            "classes": list(classes) if classes is not None else None,
+            "findings": list(findings) if findings is not None else None,
+            "language": language,
+        }
+        meta = {k: v for k, v in self.dataset_meta.items() if v is not None}
+        meta.update({k: v for k, v in split_meta.items() if v is not None})
+        hf_df = df.copy()
+        for key, value in meta.items():
+            hf_df[key] = [value] * len(hf_df)
+        self.dataset_splits[name] = Dataset.from_pandas(hf_df, preserve_index=False)
+        return csv_path
+
+    def save_dataset_dict(self) -> Optional[Path]:
+        if not self.dataset_splits:
+            return None
+        ds_dict = DatasetDict(self.dataset_splits)
+        ds_dict.save_to_disk(str(self.output_root))
+        logger.info("Saved Hugging Face dataset with splits %s -> %s", list(self.dataset_splits.keys()), self.output_root)
+        return self.output_root
 
 
 def _parse_kwargs(pairs: List[str]) -> Dict[str, str]:
@@ -169,7 +215,6 @@ def preprocess_mimic(base_path: Path, output_root: Optional[Path] = None, **kwar
     """Prepare MIMIC-CXR splits."""
     base_path = Path(base_path)
     output_root = Path(output_root) 
-    writer = _DatasetWriter(output_root)
     cleaner = _TextCleaner()
     label_proc = _LabelProcessor()
     splitter = _Splitter()
@@ -241,6 +286,11 @@ def preprocess_mimic(base_path: Path, output_root: Optional[Path] = None, **kwar
     )
     test_y = test_y.reindex(sorted(test_y.columns), axis=1)
 
+    findings = list(test_y.columns)
+    all_labels = pd.concat([y, test_y], axis=0)
+    classes = sorted({int(v) for v in all_labels.stack().unique()})
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="English")
+
     X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(
         test_X, test_y, test_size=98, val_size=49
     )
@@ -262,11 +312,12 @@ def preprocess_mimic(base_path: Path, output_root: Optional[Path] = None, **kwar
     }.items():
         writer.write_report_label_rows(name, x_df, y_df, index=False)
 
+    writer.save_dataset_dict()
+
 
 def preprocess_casia(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     base_path = Path(base_path)
     output_root = Path(output_root) 
-    writer = _DatasetWriter(output_root)
     cleaner = _TextCleaner()
     splitter = _Splitter()
 
@@ -289,6 +340,10 @@ def preprocess_casia(base_path: Path, output_root: Optional[Path] = None, **kwar
     y = casia.drop(columns=["report"])
     y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
 
+    classes = sorted({int(v) for v in y.stack().unique()})
+    findings = list(y.columns)
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="French")
+
     X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(X, y, test_size=0.3, val_size=100)
 
     for name, df in {
@@ -307,6 +362,8 @@ def preprocess_casia(base_path: Path, output_root: Optional[Path] = None, **kwar
         "test": (X_test, y_test),
     }.items():
         writer.write_report_label_rows(name, x_df, y_df, index=False)
+
+    writer.save_dataset_dict()
 
 
 def _load_padchest_json(padchest_reports_path: Path) -> Tuple[pd.Series, pd.Series, List[List[str]]]:
@@ -343,8 +400,6 @@ def preprocess_padchest(base_path: Path, output_root: Optional[Path] = None, min
     base_path = Path(base_path)
     base_output = Path(output_root) if output_root else base_path / "data/padchest"
     base_output.mkdir(parents=True, exist_ok=True)
-    writer_es = _DatasetWriter(base_path / "data/padchest_es")
-    writer_en = _DatasetWriter(base_path / "data/padchest_en")
 
     reports_en, reports_es, label_set = _load_padchest_json(base_path / "padchest" / "padchest_reports.json")
     padchest_df = _padchest_frame(reports_en, reports_es, label_set, min_occurrence)
@@ -353,6 +408,11 @@ def preprocess_padchest(base_path: Path, output_root: Optional[Path] = None, min
     X_en = padchest_df["reports_en"]
     Y = padchest_df.iloc[:, 2:].copy()
     Y.replace(0, -1, inplace=True)
+
+    findings = list(Y.columns)
+    classes = sorted({int(v) for v in Y.stack().unique()})
+    writer_es = _DatasetWriter(base_path / "data/padchest_es", classes=classes, findings=findings, language="Spanish")
+    writer_en = _DatasetWriter(base_path / "data/padchest_en", classes=classes, findings=findings, language="English")
 
     splitter = _Splitter()
     X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(
@@ -392,6 +452,9 @@ def preprocess_padchest(base_path: Path, output_root: Optional[Path] = None, min
     }.items():
         writer_en.write_report_label_rows(name, X.to_frame(name="report"), y, index=False)
 
+    writer_es.save_dataset_dict()
+    writer_en.save_dataset_dict()
+
 
 def _load_danskcxr_split(base_path: Path, split: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
     imp_findings = [
@@ -430,17 +493,27 @@ def _load_danskcxr_split(base_path: Path, split: str) -> Tuple[pd.DataFrame, pd.
 def preprocess_danskcxr(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     base_path = Path(base_path)
     output_root = Path(output_root) 
-    writer = _DatasetWriter(output_root)
+    splits: Dict[str, Tuple[pd.DataFrame, pd.DataFrame]] = {}
+    classes_set = set()
+    findings: Optional[List[str]] = None
     for split in ["test", "train", "val"]:
         X, y = _load_danskcxr_split(base_path, split)
+        splits[split] = (X, y)
+        classes_set.update(int(v) for v in y.stack().unique())
+        if findings is None:
+            findings = list(y.columns)
+
+    writer = _DatasetWriter(output_root, classes=sorted(classes_set), findings=findings, language="Danish")
+    for split, (X, y) in splits.items():
         writer.write_report_label_rows(split, X, y, index=False)
+
+    writer.save_dataset_dict()
 
 
 def preprocess_reflacx(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     """Prepare Reflacx datasets with train/val/test splits for subsets i and ii."""
     base_path = Path(base_path)
     output_root = Path(output_root) 
-    writer = _DatasetWriter(output_root)
     reports_map = {}
     for patient in os.listdir(base_path):
         if patient.startswith("P"):
@@ -480,7 +553,7 @@ def preprocess_reflacx(base_path: Path, output_root: Optional[Path] = None, **kw
     A_X_train, A_X_val, A_X_test, A_y_train, A_y_val, A_y_test = splitter.train_val_test(A_X, A_y, test_size=0.5, val_size=50)
     B_X_train, B_X_val, B_X_test, B_y_train, B_y_val, B_y_test = splitter.train_val_test(B_X, B_y, test_size=0.5, val_size=50)
 
-    for name, (X, y) in {
+    split_map = {
         "i_all_test": _prep(df_A_train),
         "ii_all_test": _prep(df_B_train),
         "i_train": (A_X_train, A_y_train),
@@ -489,15 +562,31 @@ def preprocess_reflacx(base_path: Path, output_root: Optional[Path] = None, **kw
         "ii_val": (B_X_val, B_y_val),
         "i_test": (A_X_test, A_y_test),
         "ii_test": (B_X_test, B_y_test),
-    }.items():
-        writer.write_report_label_rows(name, X, y, index=False)
+    }
+
+    classes_set = set()
+    findings_per_split: Dict[str, List[str]] = {}
+    for name, (_, y) in split_map.items():
+        classes_set.update(int(v) for v in y.stack().unique())
+        findings_per_split[name] = list(y.columns)
+
+    writer = _DatasetWriter(output_root, classes=sorted(classes_set), language="English")
+    for name, (X, y) in split_map.items():
+        writer.write_report_label_rows(
+            name,
+            X,
+            y,
+            index=False,
+            findings=findings_per_split.get(name),
+        )
+
+    writer.save_dataset_dict()
 
 
 
 def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     base_path = Path(base_path)
     output_root = Path(output_root) 
-    writer = _DatasetWriter(output_root)
     splitter = _Splitter()
     cleaner = _TextCleaner()
 
@@ -511,6 +600,10 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
     X = X.reset_index(drop=True)
     y = y.drop(columns=["Study_Series_ID"])
     y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
+
+    classes = sorted({int(v) for v in y.stack().unique()})
+    findings = list(y.columns)
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
 
     print(len(X), len(y))
 
@@ -532,6 +625,8 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
         "test": (X_test, y_test),
     }.items():
         writer.write_report_label_rows(name, x_df, y_df, index=False)
+
+    writer.save_dataset_dict()
 
 
 
