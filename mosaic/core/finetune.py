@@ -147,7 +147,7 @@ def init_trainer(model_config, training_config, model_training_config, logging_c
     trainer = train_only_on_responses(trainer, model_config)
     return trainer
     
-def train_only_on_responses(trainer: SFTTrainer, model_config: dict) -> SFTTrainer:
+def train_only_on_responses(trainer, model_config):
     """
     Modifies the trainer to only train on the assistant responses, ignoring the user's inputs.
 
