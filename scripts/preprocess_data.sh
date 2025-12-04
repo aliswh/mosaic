@@ -17,7 +17,7 @@ export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH:-}"
 
 FUNCTION_NAME="danskmri"
 INPUT_DIR="/proc_bd5/bd_wp5/radiology_reports/nlp/neurotekst/neurotekst/data/"
-OUTPUT_DIR="/staff/aliceschiavone/mosaic/outputs"
+OUTPUT_DIR="data/danskmri"
 EXTRA_ARGS=()
 
 while getopts "f:i:o:k:h" opt; do

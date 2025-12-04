@@ -7,9 +7,9 @@ cd "$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH}"
 
 # Default values
-EXP="m" # configuration file for experiment
+EXP="danskmri" # configuration file for experiment
 MODEL_TAG="mosaic-4b"
-WANDB_PROJECT="danskmri" # Set to None to disable wandb logging by default
+WANDB_PROJECT="None" # Set to None to disable wandb logging by default
 TRAIN_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")
 VALID_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")
 OUTPUT_DIR="outputs/"
@@ -47,13 +47,6 @@ while getopts "e:o:h:p:t:v:m" opt; do
     esac
 done
 
-# Validate experiment type
-valid_exps=("m" "mpe" "mppe" "mppec" "mppecd")
-if [[ ! " ${valid_exps[@]} " =~ " ${EXP} " ]]; then
-    echo "Error: Invalid experiment type '${EXP}'"
-    echo "Valid experiments are: ${valid_exps[*]}"
-    exit 1
-fi
 
 # Activate conda environment
 eval "$(conda shell.bash hook)"

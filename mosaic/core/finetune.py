@@ -290,7 +290,7 @@ if __name__ == "__main__":
     print(train_dataset_names, train_dataset)
     train_dataset = process_dataset(train_dataset, tokenizer, model_tag)
     val_dataset = process_dataset(val_dataset, tokenizer, model_tag)
-    print("Training example:\n", train_dataset[0]['text'])
+    #print("Training example:\n", train_dataset[0]['text'])
     print(f"N. training: {len(train_dataset)}, n. validation; {len(val_dataset)}")
 
     if args.check_prompts_size:

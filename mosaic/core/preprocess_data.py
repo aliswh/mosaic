@@ -592,6 +592,7 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
 
     X = pd.read_csv(base_path / "X.csv")
     y = pd.read_csv(base_path / "y.csv")
+    print(y.head())
     y = y.fillna(-1)
 
     y = y.replace({3:1, 4:0})
@@ -607,7 +608,7 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
 
     print(len(X), len(y))
 
-    X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(X, y, test_size=0.3, val_size=100)
+    X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(X, y, test_size=0.3, val_size=0.1)
 
     for name, df in {
         "X_train": X_train,
