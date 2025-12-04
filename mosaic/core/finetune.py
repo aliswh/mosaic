@@ -1,8 +1,6 @@
 import os
-import torch
 import wandb
 import shutil, argparse
-from trl import SFTTrainer, SFTConfig
 from mosaic.core.utils import (
     get_working_dir,
     load_config,
@@ -229,6 +227,8 @@ if __name__ == "__main__":
     # avoid import on unsloth into other scripts if not necessary
     from unsloth import FastModel
     from unsloth.chat_templates import train_on_responses_only
+    from trl import SFTTrainer, SFTConfig
+    import torch
 
     argparse = argparse.ArgumentParser()
     argparse.add_argument('-m', '--model_name', help='HF model tag', required=True)
