@@ -19,10 +19,10 @@ def model_init(model_tag, is_quantized, load_adapter):
 
     llm = LLM(
         model_tag,
-        **vllm_config['llm'],
+        **vllm_config['VLLM_KWARGS'],
         **quantization,
     )
-    sampling_params = SamplingParams(**vllm_config['sampling'])
+    sampling_params = SamplingParams(**vllm_config['SAMPLING_KWARGS'])
     return llm, sampling_params
 
 
