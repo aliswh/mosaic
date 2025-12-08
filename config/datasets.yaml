@@ -154,21 +154,16 @@ bd5_translated:
 
 danskmri:
   path: data/danskmri
-  classes: [-1, 0, 1]
+  classes: [-1, 1]
   findings: [
-    "amygdala atrophy",
-    "amygdala hyperintensity",
-    "atrophied hippocampus",
-    "encephalocele",
-    "focal cortical dysplasia",
-    "hamartoma",
-    "hemimegalencephaly",
-    "heterotopia",
-    "hippocampus hyperintensities",
-    "lissencephaly",
-    "mesial temporal sclerosis",
-    "polymicrogyria",
-    "schizencephaly",
-    "tuberous sclerosis"
+    'abnormal amygdala',
+    'abnormal hippocampus',
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'mesial temporal sclerosis',
+    'polymicrogyria'
   ]
   language: Danish

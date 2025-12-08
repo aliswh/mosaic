@@ -22,10 +22,8 @@ wdir = get_working_dir()
 vllm_config = load_config(wdir, 'vllm')
 paths_config = load_config(wdir, 'paths')
 
-MAX_SEQ_LENGTH = vllm_config['VLLM_KWARGS']['max_model_len']
 
 def model_init(model_tag, is_quantized, load_adapter):
-    vllm_config = load_config(get_working_dir(), 'vllm')
     quantization = {
         'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
@@ -33,8 +31,6 @@ def model_init(model_tag, is_quantized, load_adapter):
 
     # Use max_seq_length from models config
     vllm_kwargs = vllm_config['VLLM_KWARGS'].copy()
-    if isinstance(vllm_kwargs.get('max_model_len'), str) and vllm_kwargs['max_model_len'] == 'MAX_SEQ_LENGTH':
-        vllm_kwargs['max_model_len'] = 2048  # Default value from models.yaml
 
     llm = LLM(
         model_tag, 
@@ -169,11 +165,12 @@ if __name__ == "__main__":
 
             tokenizer = AutoTokenizer.from_pretrained(model_config['model_tag'])
             tokenized_prompts = tokenizer(dataset)
-            max_seq_length = 2048  # From models.yaml
+            max_seq_length = vllm_config["VLLM_KWARGS"]['max_model_len']
             assert max([len(x) for x in tokenized_prompts['input_ids']]) <= max_seq_length, f"Prompts are too long. Max length is {max_seq_length}."
 
             findings = datasets_yaml[datasets_names[idx]]['findings']
             classes = datasets_classes[idx]
+            print(classes)
             empty_json = {f: None for f in findings}  # invalid predictions are None
 
             outputs, n_none = generate_response(

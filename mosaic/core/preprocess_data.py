@@ -121,12 +121,28 @@ class _Splitter:
         X_train, X_val, y_train, y_val = self._multilabel_train_test_split(
             X_train, y_train, stratify=y_train, test_size=val_size
         )
+
+        value_counts = lambda y: y.apply(lambda col: col.value_counts())
+
+        train = value_counts(y_train); train["split"] = "train"
+        val   = value_counts(y_val);   val["split"]   = "val"
+        test  = value_counts(y_test);  test["split"]  = "test"
+
+        train = train.reset_index().rename(columns={"index": "value"})
+        val   = val.reset_index().rename(columns={"index": "value"})
+        test  = test.reset_index().rename(columns={"index": "value"})
+        full_counts = pd.concat([train, val, test], axis=0)
+
+        full_counts.to_csv("split_value_counts.csv", index=False)
+
         return X_train, X_val, X_test, y_train, y_val, y_test
 
     def train_holdout(
         self, X: pd.DataFrame, y: pd.DataFrame, test_size: float | int
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         return self._multilabel_train_test_split(X, y, stratify=y, test_size=test_size)
+
+
 
 
 class _DatasetWriter:
@@ -595,7 +611,7 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
     print(y.head())
     y = y.fillna(-1)
 
-    y = y.replace({3:1, 4:0})
+    y = y.replace({3:-1, 4:-1, 2:-1})
 
     X = cleaner.clean(X[["text"]], column="text")
     X = X.reset_index(drop=True)

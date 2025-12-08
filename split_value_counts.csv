@@ -1,0 +1,7 @@
+value,abnormal amygdala,abnormal hippocampus,encephalocele,focal cortical dysplasia,hamartoma,hemimegalencephaly,heterotopia,mesial temporal sclerosis,polymicrogyria,split
+-1.0,1558,1325,1573,1321,1556,1580,1522,1490,1534,train
+1.0,25,258,10,262,27,3,61,93,49,train
+-1.0,173,152,174,156,173,175,169,162,166,val
+1.0,3,24,2,20,3,1,7,14,10,val
+-1.0,751,656,751,631,740,752,728,720,738,test
+1.0,4,99,4,124,15,3,27,35,17,test
