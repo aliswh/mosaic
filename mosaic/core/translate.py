@@ -57,8 +57,10 @@ def process_for_translations(dataset, target_lang, llm):
 
 
 def add_translations_to_dataset(dataset, outputs, language):
-    dataset = dataset.add_column('language', [language]*len(dataset))
-    return dataset.remove_columns('report').add_column('report', outputs)
+    if "language" in dataset.column_names:
+        dataset = dataset.remove_columns("language")
+    dataset = dataset.add_column("language", [language] * len(dataset))
+    return dataset.remove_columns("report").add_column("report", outputs)
 
 
 def translate_vllm(model, sampling_params, dataset):  
