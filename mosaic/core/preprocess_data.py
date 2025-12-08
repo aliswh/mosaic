@@ -80,21 +80,31 @@ def _format_label_value(value: object) -> str:
     return str(value)
 
 
-def _find_singleton_label_values(labels: pd.DataFrame) -> Tuple[List, List[str]]:
-    if not isinstance(labels, pd.DataFrame) or labels.empty:
-        return [], []
+@dataclass
+class _ForcedSamplePlan:
+    to_train: List[object]
+    to_test: List[object]
+    warnings: List[str]
 
-    forced_indices: List[object] = []
-    seen_indices: Set[object] = set()
+
+def _identify_forced_sample_plan(labels: pd.DataFrame) -> _ForcedSamplePlan:
+    if not isinstance(labels, pd.DataFrame) or labels.empty:
+        return _ForcedSamplePlan([], [], [])
+
+    order_lookup = {idx: pos for pos, idx in enumerate(labels.index)}
+    test_reserved: Set[object] = set()
+    train_reserved: Set[object] = set()
     warnings: List[str] = []
     seen_messages: Set[str] = set()
-    order_lookup = {idx: pos for pos, idx in enumerate(labels.index)}
+
+    def _warn(message: str) -> None:
+        if message not in seen_messages:
+            warnings.append(message)
+            seen_messages.add(message)
 
     for column in labels.columns:
         counts = labels[column].value_counts(dropna=False)
         for value, count in counts.items():
-            if count != 1:
-                continue
             if pd.isna(value):
                 mask = labels[column].isna()
             else:
@@ -102,17 +112,47 @@ def _find_singleton_label_values(labels: pd.DataFrame) -> Tuple[List, List[str]]
             matching_indices = labels.index[mask]
             if matching_indices.empty:
                 continue
-            idx = matching_indices[0]
-            if idx not in seen_indices:
-                seen_indices.add(idx)
-                forced_indices.append(idx)
-            message = f"Only one example for label '{column}' class '{_format_label_value(value)}'; assigning to test split."
-            if message not in seen_messages:
-                warnings.append(message)
-                seen_messages.add(message)
+            sorted_indices = sorted(matching_indices.tolist(), key=lambda idx: order_lookup.get(idx, -1))
 
-    forced_indices.sort(key=lambda idx: order_lookup.get(idx, -1))
-    return forced_indices, warnings
+            if count == 1:
+                idx = sorted_indices[0]
+                if idx not in test_reserved:
+                    test_reserved.add(idx)
+                message = (
+                    f"Only one example for label '{column}' class '{_format_label_value(value)}'; assigning to test split."
+                )
+                _warn(message)
+                continue
+
+            if count == 2:
+                if len(sorted_indices) < 2:
+                    continue
+                first, second = sorted_indices[0], sorted_indices[1]
+                if first in test_reserved and second in test_reserved:
+                    _warn(
+                        f"Unable to reserve train/test pair for label '{column}' class '{_format_label_value(value)}' because both samples are already required in the test split."
+                    )
+                    continue
+                if first in test_reserved:
+                    train_idx, test_idx = second, first
+                elif second in test_reserved:
+                    train_idx, test_idx = first, second
+                else:
+                    train_idx, test_idx = first, second
+                if train_idx in test_reserved:
+                    _warn(
+                        f"Unable to reserve train sample for label '{column}' class '{_format_label_value(value)}' due to conflicting assignments."
+                    )
+                    continue
+                train_reserved.add(train_idx)
+                test_reserved.add(test_idx)
+                _warn(
+                    f"Only two examples for label '{column}' class '{_format_label_value(value)}'; reserving one for train and one for test."
+                )
+
+    train_indices = sorted(train_reserved, key=lambda idx: order_lookup.get(idx, -1))
+    test_indices = sorted(test_reserved, key=lambda idx: order_lookup.get(idx, -1))
+    return _ForcedSamplePlan(train_indices, test_indices, warnings)
 
 
 class _Splitter:
@@ -129,20 +169,36 @@ class _Splitter:
         except AttributeError:
             return obj[:0]
 
-    def _split_forced_test_samples(self, X, y):
+    @staticmethod
+    def _combine_frames(base, addition):
+        if len(addition) == 0:
+            return base
+        if len(base) == 0:
+            return addition
+        return pd.concat([base, addition], axis=0).sort_index()
+
+    def _split_forced_samples(self, X, y):
+        empty_X = self._empty_like(X)
+        empty_y = self._empty_like(y)
         if not isinstance(y, pd.DataFrame):
-            return X, y, self._empty_like(X), self._empty_like(y), []
+            return X, y, (empty_X, empty_y), (empty_X, empty_y), []
 
-        forced_indices, warnings = _find_singleton_label_values(y)
-        if not forced_indices:
-            return X, y, self._empty_like(X), self._empty_like(y), []
+        plan = _identify_forced_sample_plan(y)
+        if not plan.to_train and not plan.to_test:
+            return X, y, (empty_X, empty_y), (empty_X, empty_y), plan.warnings
 
-        forced_idx = pd.Index(forced_indices)
-        forced_X = X.loc[forced_idx]
-        forced_y = y.loc[forced_idx]
+        forced_idx = pd.Index(plan.to_train + plan.to_test)
         remaining_X = X.drop(index=forced_idx, errors="ignore")
         remaining_y = y.drop(index=forced_idx, errors="ignore")
-        return remaining_X, remaining_y, forced_X, forced_y, warnings
+
+        def _slice(df, indices):
+            if not indices:
+                return self._empty_like(df)
+            return df.loc[pd.Index(indices)]
+
+        forced_train = (_slice(X, plan.to_train), _slice(y, plan.to_train))
+        forced_test = (_slice(X, plan.to_test), _slice(y, plan.to_test))
+        return remaining_X, remaining_y, forced_train, forced_test, plan.warnings
 
     def _multilabel_train_test_split(
         self,
@@ -178,8 +234,14 @@ class _Splitter:
         test_size: float | int,
         val_size: float | int,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        X_remaining, y_remaining, forced_X, forced_y, singleton_messages = self._split_forced_test_samples(X, y)
-        for message in singleton_messages:
+        (
+            X_remaining,
+            y_remaining,
+            (forced_train_X, forced_train_y),
+            (forced_test_X, forced_test_y),
+            forced_messages,
+        ) = self._split_forced_samples(X, y)
+        for message in forced_messages:
             logger.warning(message)
 
         X_train_final = self._empty_like(X)
@@ -188,8 +250,6 @@ class _Splitter:
         y_val_final = self._empty_like(y)
         X_test_final = self._empty_like(X)
         y_test_final = self._empty_like(y)
-
-        forced_total = len(forced_X)
 
         if len(y_remaining) > 0:
             try:
@@ -202,12 +262,8 @@ class _Splitter:
                     exc,
                     len(y_remaining),
                 )
-                if len(forced_X) > 0:
-                    forced_X = pd.concat([forced_X, X_remaining], axis=0)
-                    forced_y = pd.concat([forced_y, y_remaining], axis=0)
-                else:
-                    forced_X, forced_y = X_remaining, y_remaining
-                forced_total = len(forced_X)
+                forced_test_X = self._combine_frames(forced_test_X, X_remaining)
+                forced_test_y = self._combine_frames(forced_test_y, y_remaining)
             else:
                 X_test_final = X_test_candidate
                 y_test_final = y_test_candidate
@@ -225,16 +281,22 @@ class _Splitter:
                     X_val_final = self._empty_like(X_train_candidate)
                     y_val_final = self._empty_like(y_train_candidate)
 
-        if len(forced_X) > 0:
-            if len(X_test_final) > 0:
-                X_test_final = pd.concat([X_test_final, forced_X], axis=0).sort_index()
-                y_test_final = pd.concat([y_test_final, forced_y], axis=0).sort_index()
-            else:
-                X_test_final = forced_X.sort_index()
-                y_test_final = forced_y.sort_index()
+        X_train_final = self._combine_frames(X_train_final, forced_train_X)
+        y_train_final = self._combine_frames(y_train_final, forced_train_y)
+        X_test_final = self._combine_frames(X_test_final, forced_test_X)
+        y_test_final = self._combine_frames(y_test_final, forced_test_y)
+
+        forced_train_count = len(forced_train_y)
+        forced_test_count = len(forced_test_y)
+        if forced_train_count > 0:
+            logger.warning(
+                "Reserved %d sample(s) directly for the training split to satisfy balancing constraints.",
+                forced_train_count,
+            )
+        if forced_test_count > 0:
             logger.warning(
                 "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
-                forced_total,
+                forced_test_count,
             )
 
         value_counts = lambda y: y.apply(lambda col: col.value_counts())
@@ -255,40 +317,55 @@ class _Splitter:
     def train_holdout(
         self, X: pd.DataFrame, y: pd.DataFrame, test_size: float | int
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        X_remaining, y_remaining, forced_X, forced_y, singleton_messages = self._split_forced_test_samples(X, y)
-        for message in singleton_messages:
+        (
+            X_remaining,
+            y_remaining,
+            (forced_train_X, forced_train_y),
+            (forced_test_X, forced_test_y),
+            forced_messages,
+        ) = self._split_forced_samples(X, y)
+        for message in forced_messages:
             logger.warning(message)
 
         if len(y_remaining) == 0:
-            return self._empty_like(X), forced_X, self._empty_like(y), forced_y
-
-        try:
-            X_train, X_test, y_train, y_test = self._multilabel_train_test_split(
-                X_remaining, y_remaining, stratify=y_remaining, test_size=test_size
-            )
-        except ValueError as exc:
-            logger.warning(
-                "Unable to create stratified train/holdout split (%s). Assigning %d sample(s) to the test split.",
-                exc,
-                len(y_remaining),
-            )
-            if len(forced_X) > 0:
-                forced_X = pd.concat([forced_X, X_remaining], axis=0)
-                forced_y = pd.concat([forced_y, y_remaining], axis=0)
+            X_train = forced_train_X
+            y_train = forced_train_y
+            X_test = forced_test_X
+            y_test = forced_test_y
+        else:
+            try:
+                X_train, X_test, y_train, y_test = self._multilabel_train_test_split(
+                    X_remaining, y_remaining, stratify=y_remaining, test_size=test_size
+                )
+            except ValueError as exc:
+                logger.warning(
+                    "Unable to create stratified train/holdout split (%s). Assigning %d sample(s) to the test split.",
+                    exc,
+                    len(y_remaining),
+                )
+                forced_test_X = self._combine_frames(forced_test_X, X_remaining)
+                forced_test_y = self._combine_frames(forced_test_y, y_remaining)
+                X_train = forced_train_X
+                y_train = forced_train_y
+                X_test = forced_test_X
+                y_test = forced_test_y
             else:
-                forced_X, forced_y = X_remaining, y_remaining
-            logger.warning(
-                "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
-                len(forced_X),
-            )
-            return self._empty_like(X), forced_X, self._empty_like(y), forced_y
+                X_train = self._combine_frames(X_train, forced_train_X)
+                y_train = self._combine_frames(y_train, forced_train_y)
+                X_test = self._combine_frames(X_test, forced_test_X)
+                y_test = self._combine_frames(y_test, forced_test_y)
 
-        if len(forced_X) > 0:
-            X_test = pd.concat([X_test, forced_X], axis=0).sort_index()
-            y_test = pd.concat([y_test, forced_y], axis=0).sort_index()
+        forced_train_count = len(forced_train_y)
+        forced_test_count = len(forced_test_y)
+        if forced_train_count > 0:
+            logger.warning(
+                "Reserved %d sample(s) directly for the training split to satisfy balancing constraints.",
+                forced_train_count,
+            )
+        if forced_test_count > 0:
             logger.warning(
                 "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
-                len(forced_X),
+                forced_test_count,
             )
 
         return X_train, X_test, y_train, y_test
