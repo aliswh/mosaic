@@ -70,11 +70,15 @@ echo "  Training datasets: ${TRAIN_DATASETS[*]}"
 echo "  Test datasets: ${TEST_DATASETS[*]}"
 echo
 
+# Join dataset arrays for argparse
+TRAIN_DATASETS_STR="${TRAIN_DATASETS[*]}"
+TEST_DATASETS_STR="${TEST_DATASETS[*]}"
+
 python -m mosaic.core.inference \
     --model_name "$MODEL_TAG" \
     --zeroshot "$ZERO_SHOT" \
-    --train_dataset_names "${TRAIN_DATASETS[@]}" \
-    --test_dataset_names "${TEST_DATASETS[@]}" \
+    --train_dataset_names "$TRAIN_DATASETS_STR" \
+    --test_dataset_names "$TEST_DATASETS_STR" \
     --project_name "$WANDB_PROJECT" \
     --models_folder "$MODEL_PATH" \
     --output_dir "$OUTPUT_DIR" \

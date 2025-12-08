@@ -82,10 +82,14 @@ echo "  Training datasets: ${TRAIN_DATASETS[*]}"
 echo "  Validation datasets: ${VALID_DATASETS[*]}"
 echo
 
+# Join dataset arrays into space-separated strings for argparse
+TRAIN_DATASETS_STR="${TRAIN_DATASETS[*]}"
+VALID_DATASETS_STR="${VALID_DATASETS[*]}"
+
 python -m mosaic.core.finetune \
     --model_name "$MODEL_TAG" \
     --config_tag "$EXP" \
     --project_name "$WANDB_PROJECT" \
-    --train_dataset_names "${TRAIN_DATASETS[@]}" \
-    --valid_dataset_names "${VALID_DATASETS[@]}" \
+    --train_dataset_names "$TRAIN_DATASETS_STR" \
+    --valid_dataset_names "$VALID_DATASETS_STR" \
     --output_dir "$OUTPUT_DIR" 
