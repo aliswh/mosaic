@@ -156,14 +156,14 @@ danskmri:
   path: data/danskmri
   classes: [-1, 1]
   findings: [
-    'abnormal amygdala',
-    'abnormal hippocampus',
     'encephalocele',
     'focal cortical dysplasia',
     'hamartoma',
     'hemimegalencephaly',
     'heterotopia',
-    'mesial temporal sclerosis',
-    'polymicrogyria'
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly',
+    'tuberous sclerosis'
   ]
   language: Danish
