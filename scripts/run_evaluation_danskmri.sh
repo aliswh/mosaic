@@ -8,7 +8,7 @@ export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH}"
 
 # Default values
 EXP="danskmri" # configuration file for experiment
-MODEL_TAG="mosaic-4b"
+MODEL_TAG="mosaic-12b"
 WANDB_PROJECT=None # Set to None to disable wandb logging by default
 TRAIN_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")
 TEST_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")

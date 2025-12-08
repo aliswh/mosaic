@@ -26,7 +26,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH:-}"
 
-MODEL_TAG="medgemma-4b"
+MODEL_TAG="medgemma-27b"
 DATASET_NAME="danskmri"
 MODELS_FOLDER="outputs"
 FINAL_OUTPUT_DIR="data/danskmri_eng"

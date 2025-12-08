@@ -10,7 +10,7 @@ from mosaic.core.utils import get_working_dir, load_config
 wdir = get_working_dir()
 languages_config = load_config(wdir, 'languages')
 
-def model_init(model_tag, is_quantized, load_adapter):
+def model_init(model_tag, is_quantized):
     vllm_config = load_config(get_working_dir(), 'vllm')
     quantization = {
         'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
@@ -110,10 +110,10 @@ if __name__ == '__main__':
     dataset = load_from_disk(datasets_yaml[dataset_name]['path'])
     dataset_classes = datasets_yaml[dataset_name]['classes']
     
-    model, sampling_params = model_init(model_config['model_tag'], model_config['load_in_4bit'], model_config['load_adapter'])
+    model, sampling_params = model_init(model_config['model_tag'], model_config['load_in_4bit'])
 
     if args.train_only: splits_to_translate = ['train']
-    else: splits_to_translate = ['train', 'test', 'validation']
+    else: splits_to_translate = ['train', 'test', 'val']
 
     for split in splits_to_translate:
         original_dataset = dataset[split]
