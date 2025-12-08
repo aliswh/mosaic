@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 from datasets import Dataset, DatasetDict
@@ -74,12 +74,75 @@ class _LabelProcessor:
         return df
 
 
+def _format_label_value(value: object) -> str:
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _find_singleton_label_values(labels: pd.DataFrame) -> Tuple[List, List[str]]:
+    if not isinstance(labels, pd.DataFrame) or labels.empty:
+        return [], []
+
+    forced_indices: List[object] = []
+    seen_indices: Set[object] = set()
+    warnings: List[str] = []
+    seen_messages: Set[str] = set()
+    order_lookup = {idx: pos for pos, idx in enumerate(labels.index)}
+
+    for column in labels.columns:
+        counts = labels[column].value_counts(dropna=False)
+        for value, count in counts.items():
+            if count != 1:
+                continue
+            if pd.isna(value):
+                mask = labels[column].isna()
+            else:
+                mask = labels[column] == value
+            matching_indices = labels.index[mask]
+            if matching_indices.empty:
+                continue
+            idx = matching_indices[0]
+            if idx not in seen_indices:
+                seen_indices.add(idx)
+                forced_indices.append(idx)
+            message = f"Only one example for label '{column}' class '{_format_label_value(value)}'; assigning to test split."
+            if message not in seen_messages:
+                warnings.append(message)
+                seen_messages.add(message)
+
+    forced_indices.sort(key=lambda idx: order_lookup.get(idx, -1))
+    return forced_indices, warnings
+
+
 class _Splitter:
     """Multilabel stratified splits mirroring the notebook helpers."""
 
     def __init__(self, random_state: int = 42, n_splits: int = 10):
         self.random_state = random_state
         self.n_splits = n_splits
+
+    @staticmethod
+    def _empty_like(obj):
+        try:
+            return obj.iloc[0:0].copy()
+        except AttributeError:
+            return obj[:0]
+
+    def _split_forced_test_samples(self, X, y):
+        if not isinstance(y, pd.DataFrame):
+            return X, y, self._empty_like(X), self._empty_like(y), []
+
+        forced_indices, warnings = _find_singleton_label_values(y)
+        if not forced_indices:
+            return X, y, self._empty_like(X), self._empty_like(y), []
+
+        forced_idx = pd.Index(forced_indices)
+        forced_X = X.loc[forced_idx]
+        forced_y = y.loc[forced_idx]
+        remaining_X = X.drop(index=forced_idx, errors="ignore")
+        remaining_y = y.drop(index=forced_idx, errors="ignore")
+        return remaining_X, remaining_y, forced_X, forced_y, warnings
 
     def _multilabel_train_test_split(
         self,
@@ -115,18 +178,70 @@ class _Splitter:
         test_size: float | int,
         val_size: float | int,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        X_train, X_test, y_train, y_test = self._multilabel_train_test_split(
-            X, y, stratify=y, test_size=test_size
-        )
-        X_train, X_val, y_train, y_val = self._multilabel_train_test_split(
-            X_train, y_train, stratify=y_train, test_size=val_size
-        )
+        X_remaining, y_remaining, forced_X, forced_y, singleton_messages = self._split_forced_test_samples(X, y)
+        for message in singleton_messages:
+            logger.warning(message)
+
+        X_train_final = self._empty_like(X)
+        y_train_final = self._empty_like(y)
+        X_val_final = self._empty_like(X)
+        y_val_final = self._empty_like(y)
+        X_test_final = self._empty_like(X)
+        y_test_final = self._empty_like(y)
+
+        forced_total = len(forced_X)
+
+        if len(y_remaining) > 0:
+            try:
+                X_train_candidate, X_test_candidate, y_train_candidate, y_test_candidate = self._multilabel_train_test_split(
+                    X_remaining, y_remaining, stratify=y_remaining, test_size=test_size
+                )
+            except ValueError as exc:
+                logger.warning(
+                    "Unable to create stratified train/test split (%s). Assigning %d sample(s) to the test split.",
+                    exc,
+                    len(y_remaining),
+                )
+                if len(forced_X) > 0:
+                    forced_X = pd.concat([forced_X, X_remaining], axis=0)
+                    forced_y = pd.concat([forced_y, y_remaining], axis=0)
+                else:
+                    forced_X, forced_y = X_remaining, y_remaining
+                forced_total = len(forced_X)
+            else:
+                X_test_final = X_test_candidate
+                y_test_final = y_test_candidate
+                try:
+                    X_train_final, X_val_final, y_train_final, y_val_final = self._multilabel_train_test_split(
+                        X_train_candidate, y_train_candidate, stratify=y_train_candidate, test_size=val_size
+                    )
+                except ValueError as exc:
+                    logger.warning(
+                        "Unable to create stratified train/val split (%s). Skipping validation split.",
+                        exc,
+                    )
+                    X_train_final = X_train_candidate
+                    y_train_final = y_train_candidate
+                    X_val_final = self._empty_like(X_train_candidate)
+                    y_val_final = self._empty_like(y_train_candidate)
+
+        if len(forced_X) > 0:
+            if len(X_test_final) > 0:
+                X_test_final = pd.concat([X_test_final, forced_X], axis=0).sort_index()
+                y_test_final = pd.concat([y_test_final, forced_y], axis=0).sort_index()
+            else:
+                X_test_final = forced_X.sort_index()
+                y_test_final = forced_y.sort_index()
+            logger.warning(
+                "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
+                forced_total,
+            )
 
         value_counts = lambda y: y.apply(lambda col: col.value_counts())
 
-        train = value_counts(y_train); train["split"] = "train"
-        val   = value_counts(y_val);   val["split"]   = "val"
-        test  = value_counts(y_test);  test["split"]  = "test"
+        train = value_counts(y_train_final); train["split"] = "train"
+        val   = value_counts(y_val_final);   val["split"]   = "val"
+        test  = value_counts(y_test_final);  test["split"]  = "test"
 
         train = train.reset_index().rename(columns={"index": "value"})
         val   = val.reset_index().rename(columns={"index": "value"})
@@ -135,14 +250,48 @@ class _Splitter:
 
         full_counts.to_csv("split_value_counts.csv", index=False)
 
-        return X_train, X_val, X_test, y_train, y_val, y_test
+        return X_train_final, X_val_final, X_test_final, y_train_final, y_val_final, y_test_final
 
     def train_holdout(
         self, X: pd.DataFrame, y: pd.DataFrame, test_size: float | int
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        return self._multilabel_train_test_split(X, y, stratify=y, test_size=test_size)
+        X_remaining, y_remaining, forced_X, forced_y, singleton_messages = self._split_forced_test_samples(X, y)
+        for message in singleton_messages:
+            logger.warning(message)
 
+        if len(y_remaining) == 0:
+            return self._empty_like(X), forced_X, self._empty_like(y), forced_y
 
+        try:
+            X_train, X_test, y_train, y_test = self._multilabel_train_test_split(
+                X_remaining, y_remaining, stratify=y_remaining, test_size=test_size
+            )
+        except ValueError as exc:
+            logger.warning(
+                "Unable to create stratified train/holdout split (%s). Assigning %d sample(s) to the test split.",
+                exc,
+                len(y_remaining),
+            )
+            if len(forced_X) > 0:
+                forced_X = pd.concat([forced_X, X_remaining], axis=0)
+                forced_y = pd.concat([forced_y, y_remaining], axis=0)
+            else:
+                forced_X, forced_y = X_remaining, y_remaining
+            logger.warning(
+                "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
+                len(forced_X),
+            )
+            return self._empty_like(X), forced_X, self._empty_like(y), forced_y
+
+        if len(forced_X) > 0:
+            X_test = pd.concat([X_test, forced_X], axis=0).sort_index()
+            y_test = pd.concat([y_test, forced_y], axis=0).sort_index()
+            logger.warning(
+                "Assigned %d sample(s) directly to the test split to satisfy balancing constraints.",
+                len(forced_X),
+            )
+
+        return X_train, X_test, y_train, y_test
 
 
 class _DatasetWriter:
