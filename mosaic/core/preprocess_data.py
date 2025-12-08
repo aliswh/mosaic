@@ -200,6 +200,79 @@ class _Splitter:
         forced_test = (_slice(X, plan.to_test), _slice(y, plan.to_test))
         return remaining_X, remaining_y, forced_train, forced_test, plan.warnings
 
+    def _ensure_test_positive_coverage(
+        self,
+        X_train: pd.DataFrame,
+        y_train: pd.DataFrame,
+        X_val: pd.DataFrame,
+        y_val: pd.DataFrame,
+        X_test: pd.DataFrame,
+        y_test: pd.DataFrame,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        def _concat_non_empty(frames: List[pd.DataFrame]) -> Optional[pd.DataFrame]:
+            non_empty = [df for df in frames if len(df) > 0]
+            if not non_empty:
+                return None
+            return pd.concat(non_empty, axis=0)
+
+        combined = _concat_non_empty([y_train, y_val, y_test])
+        if combined is None:
+            return X_train, y_train, X_val, y_val, X_test, y_test
+
+        total_pos = combined.eq(1).sum()
+        test_pos = y_test.eq(1).sum().reindex(total_pos.index, fill_value=0)
+        missing_labels = [col for col in total_pos.index if total_pos[col] > 0 and test_pos[col] == 0]
+
+        if not missing_labels:
+            return X_train, y_train, X_val, y_val, X_test, y_test
+
+        def _pop_row(
+            df_X: pd.DataFrame, df_y: pd.DataFrame, idx: object
+        ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+            row_X = df_X.loc[[idx]]
+            row_y = df_y.loc[[idx]]
+            df_X = df_X.drop(index=idx)
+            df_y = df_y.drop(index=idx)
+            return row_X, row_y, df_X, df_y
+
+        for label in missing_labels:
+            moved = False
+            for split_name, dfs in (
+                ("val", (X_val, y_val)),
+                ("train", (X_train, y_train)),
+            ):
+                X_source, y_source = dfs
+                if len(y_source) == 0 or label not in y_source.columns:
+                    continue
+                candidate_indices = y_source.index[y_source[label] == 1]
+                if len(candidate_indices) == 0:
+                    continue
+                idx_to_move = candidate_indices[0]
+                row_X, row_y, X_source, y_source = _pop_row(X_source, y_source, idx_to_move)
+                if split_name == "val":
+                    X_val, y_val = X_source, y_source
+                else:
+                    X_train, y_train = X_source, y_source
+                X_test = self._combine_frames(X_test, row_X)
+                y_test = self._combine_frames(y_test, row_y)
+                test_pos[label] = test_pos.get(label, 0) + 1
+                logger.warning(
+                    "Moved sample %s from %s to test to ensure coverage for label '%s'.",
+                    idx_to_move,
+                    split_name,
+                    label,
+                )
+                moved = True
+                break
+            if not moved:
+                logger.warning(
+                    "Unable to find a sample to move to test for label '%s' despite %d positive example(s) overall.",
+                    label,
+                    int(total_pos[label]),
+                )
+
+        return X_train, y_train, X_val, y_val, X_test, y_test
+
     def _multilabel_train_test_split(
         self,
         *arrays: Iterable,
@@ -286,6 +359,22 @@ class _Splitter:
         X_test_final = self._combine_frames(X_test_final, forced_test_X)
         y_test_final = self._combine_frames(y_test_final, forced_test_y)
 
+        (
+            X_train_final,
+            y_train_final,
+            X_val_final,
+            y_val_final,
+            X_test_final,
+            y_test_final,
+        ) = self._ensure_test_positive_coverage(
+            X_train_final,
+            y_train_final,
+            X_val_final,
+            y_val_final,
+            X_test_final,
+            y_test_final,
+        )
+
         forced_train_count = len(forced_train_y)
         forced_test_count = len(forced_test_y)
         if forced_train_count > 0:
@@ -354,6 +443,24 @@ class _Splitter:
                 y_train = self._combine_frames(y_train, forced_train_y)
                 X_test = self._combine_frames(X_test, forced_test_X)
                 y_test = self._combine_frames(y_test, forced_test_y)
+
+        empty_val_X = self._empty_like(X_train)
+        empty_val_y = self._empty_like(y_train)
+        (
+            X_train,
+            y_train,
+            _,
+            _,
+            X_test,
+            y_test,
+        ) = self._ensure_test_positive_coverage(
+            X_train,
+            y_train,
+            empty_val_X,
+            empty_val_y,
+            X_test,
+            y_test,
+        )
 
         forced_train_count = len(forced_train_y)
         forced_test_count = len(forced_test_y)
