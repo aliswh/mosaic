@@ -10,11 +10,12 @@ export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH}"
 EXP="danskmri" # configuration file for experiment
 MODEL_TAG="mosaic-12b"
 WANDB_PROJECT=None # Set to None to disable wandb logging by default
-TRAIN_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")
-TEST_DATASETS=("danskmri") # A list like ("mimic" "padchest" "casia")
-ZERO_SHOT="off" # "on" or "off"
-OUTPUT_DIR="outputs/eval/${MODEL_TAG}"
+TRAIN_DATASETS=("danskmri_test") # A list like ("mimic" "padchest" "casia")
+TEST_DATASETS=("danskmri_test") # A list like ("mimic" "padchest" "casia")
+ZERO_SHOT="zeroshot" # "off", "zeroshot", "fewshot"
+OUTPUT_DIR="outputs/eval/${MODEL_TAG}_customprompt/danskmri_v2"
 MODEL_PATH="outputs/" # Path to trained model directory
+PROMPT_PATH="prompts/danskmri_v2.yaml" # Path to prompt configuration file
 
 # Help message
 usage() {
@@ -82,4 +83,6 @@ python -m mosaic.core.inference \
     --project_name "$WANDB_PROJECT" \
     --models_folder "$MODEL_PATH" \
     --output_dir "$OUTPUT_DIR" \
-    --experiment_tag "_$EXP"
+    --experiment_tag "_$EXP" \
+    --prompt "$PROMPT_PATH" \
+    --run_eval

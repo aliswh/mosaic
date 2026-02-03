@@ -29,7 +29,7 @@ export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH:-}"
 MODEL_TAG="medgemma-27b"
 DATASET_NAME="danskmri"
 MODELS_FOLDER="outputs"
-FINAL_OUTPUT_DIR="data/danskmri_eng"
+FINAL_OUTPUT_DIR="data/danskmri_engg"
 SOURCE_LANG="dan_Latn"
 TARGET_LANGS="eng_Latn"
 FORCE_OVERWRITE=false
@@ -83,7 +83,7 @@ if [[ -d "$FINAL_OUTPUT_DIR" ]]; then
     rm -rf "$FINAL_OUTPUT_DIR"
 fi
 
-echo "Translating dataset '$DATASET_NAME' -> English using model '$MODEL_TAG'"
+echo "Translating dataset '$DATASET_NAME' -> using model '$MODEL_TAG'"
 python -m mosaic.core.translate \
     --model_tag "$MODEL_TAG" \
     --dataset_name "$DATASET_NAME" \

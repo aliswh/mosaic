@@ -15,9 +15,14 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH:-}"
 
-FUNCTION_NAME="danskmri"
+FUNCTION_NAME="danskmri_test"
 INPUT_DIR="/proc_bd5/bd_wp5/radiology_reports/nlp/neurotekst/neurotekst/data/"
-OUTPUT_DIR="data/danskmri"
+OUTPUT_DIR="data/danskmri_test"
+
+#FUNCTION_NAME="danskmri"
+#INPUT_DIR="/proc_bd5/bd_wp5/radiology_reports/nlp/neurotekst/neurotekst/data/"
+#OUTPUT_DIR="data/danskmri"
+
 EXTRA_ARGS=()
 
 while getopts "f:i:o:k:h" opt; do

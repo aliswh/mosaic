@@ -158,12 +158,71 @@ danskmri:
   findings: [
     'encephalocele',
     'focal cortical dysplasia',
-    'hamartoma',
+    'hypothalamic hamartoma',
     'hemimegalencephaly',
     'heterotopia',
     'lissencephaly',
     'polymicrogyria',
     'schizencephaly',
-    'tuberous sclerosis'
+  ]
+  language: Danish
+
+danskmri_eng:
+  path: data/danskmri_eng
+  classes: [-1, 1]
+  findings: [
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hypothalamic hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly',
+  ]
+  language: English
+
+danskmri_test:
+  path: /proc_bd5/bd_wp5/radiology_reports/nlp/data/ohbm_2025/danskmri_test
+  classes: [-1, 1]
+  findings: [
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hypothalamic hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly',
+  ]
+  language: English
+
+danskmri_cohort2:
+  path: /proc_bd5/bd_wp5/radiology_reports/nlp/data/ohbm_2025/danskmri_cohort2
+  classes: [-1, 1]
+  findings: [
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hypothalamic hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly',
+  ]
+  language: Danish
+
+pmg_cohort2:
+  path: data/pmg_cohort2
+  classes: [-1, 1]
+  findings: [
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hypothalamic hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly',
   ]
   language: Danish
