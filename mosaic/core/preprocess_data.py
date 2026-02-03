@@ -573,6 +573,10 @@ def _register_custom_function(spec: str) -> None:
 
 
 def _load_custom_functions(specs: Iterable[str]) -> None:
+    # preload in-repo custom functions
+    for name, func in CUSTOM_DATASET_FUNCTIONS.items():
+        if callable(func):
+            DATASET_FUNCTIONS[name] = func  # type: ignore[name-defined]
     for spec in specs:
         if spec:
             _register_custom_function(spec)
