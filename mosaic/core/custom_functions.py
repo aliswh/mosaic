@@ -17,6 +17,7 @@ The CLI will automatically expose them via ``--function my_dataset``.
 from __future__ import annotations
 
 from typing import Callable, Dict
+from mosaic.core.preprocess_utils import DatasetWriter, TextCleaner
 
 # Users can add entries here without modifying preprocess_data.py
 CUSTOM_DATASET_FUNCTIONS: Dict[str, Callable[..., None]] = {}
