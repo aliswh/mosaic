@@ -13,6 +13,7 @@ Usage (from CLI):
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import logging
 import os
@@ -556,6 +557,27 @@ def _parse_kwargs(pairs: List[str]) -> Dict[str, str]:
     return parsed
 
 
+def _register_custom_function(spec: str) -> None:
+    if "=" not in spec:
+        raise ValueError(f"Invalid custom function spec '{spec}'. Expected format name=module:function")
+    name, target = spec.split("=", 1)
+    if ":" not in target:
+        raise ValueError(f"Invalid custom function target '{target}'. Expected format module:function")
+    module_name, func_name = target.rsplit(":", 1)
+    module = importlib.import_module(module_name)
+    func = getattr(module, func_name, None)
+    if func is None or not callable(func):
+        raise AttributeError(f"Function '{func_name}' not found or not callable in module '{module_name}'.")
+    DATASET_FUNCTIONS[name] = func  # type: ignore[name-defined]
+    logger.info("Registered custom dataset function '%s' from %s:%s", name, module_name, func_name)
+
+
+def _load_custom_functions(specs: Iterable[str]) -> None:
+    for spec in specs:
+        if spec:
+            _register_custom_function(spec)
+
+
 # ---------------------------------------------------------------------------
 # Dataset-specific preprocessing functions (public API)
 
@@ -939,8 +961,11 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
     splitter = _Splitter()
     cleaner = _TextCleaner()
 
-    X = pd.read_csv(base_path / "X_train.csv")
-    y = pd.read_csv(base_path / "y_train.csv")
+    reports_file = kwargs.get("reports_file", "X_train.csv")
+    labels_file = kwargs.get("labels_file", "y_train.csv")
+
+    X = pd.read_csv(base_path / reports_file)
+    y = pd.read_csv(base_path / labels_file)
     print(y.head())
     y = y.fillna(-1)
 
@@ -982,121 +1007,6 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
 
     writer.save_dataset_dict()
 
-def preprocess_danskmri_test(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
-    base_path = Path(base_path)
-    output_root = Path(output_root) 
-    splitter = _Splitter()
-    cleaner = _TextCleaner()
-
-    X = pd.read_csv(base_path / "X_train.csv")
-    y = pd.read_csv(base_path / "y_train.csv")
-    print(y.head())
-    y = y.fillna(-1)
-
-    y = y.replace({
-        3:-1, # surgery
-        4:1, # possible 
-        2:-1 # negation
-    })
-
-    X = cleaner.clean(X[["text"]], column="text")
-    X = X.reset_index(drop=True)
-    y = y.drop(columns=["Study_Series_ID"])
-    y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
-
-    classes = sorted({int(v) for v in y.stack().unique()})
-    findings = list(y.columns)
-    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
-
-    print(len(X), len(y))
-
-    for name, df in {
-        "X_test": X,
-        "y_test": y,
-    }.items():
-        writer.write_frame(name, df, index=False)
-
-    for name, (x_df, y_df) in {
-        "test": (X, y),
-    }.items():
-        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
-
-    writer.save_dataset_dict()
-
-def preprocess_danskmri_cohort2(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
-    base_path = Path(base_path)
-    output_root = Path(output_root) 
-    cleaner = _TextCleaner()
-
-    X = pd.read_csv(base_path / "X_cohort2.csv")
-
-    X = cleaner.clean(X[["text"]], column="text")
-    X_test = X.reset_index(drop=True)
-
-    classes = [-1, 1]
-    findings = [
-        'encephalocele',
-        'focal cortical dysplasia',
-        'hypothalamic hamartoma',
-        'hemimegalencephaly',
-        'heterotopia',
-        'lissencephaly',
-        'polymicrogyria',
-        'schizencephaly',
-    ]
-    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
-
-    for name, x_df in {
-        "test": X_test,
-    }.items():
-        writer.write_report_label_rows(name, x_df, index=False)
-
-    writer.save_dataset_dict()
-
-
-def preprocess_pmg_cohort2(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
-    base_path = Path(base_path)
-    output_root = Path(output_root) 
-    splitter = _Splitter()
-    cleaner = _TextCleaner()
-
-    X = pd.read_csv(base_path / "X_pmg_cohort2.csv")
-    y = pd.read_csv(base_path / "y_pmg_cohort2.csv")
-    print(y.head())
-    y = y.fillna(-1)
-
-    y = y.replace({
-        3:-1, # surgery
-        4:1, # possible 
-        2:-1 # negation
-    })
-
-    X = cleaner.clean(X[["text"]], column="text")
-    X = X.reset_index(drop=True)
-    y = y.drop(columns=["Study_Series_ID"])
-    y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
-
-    classes = sorted({int(v) for v in y.stack().unique()})
-    findings = list(y.columns)
-    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
-
-    print(len(X), len(y))
-
-    for name, df in {
-        "X_test": X,
-        "y_test": y,
-    }.items():
-        writer.write_frame(name, df, index=False)
-
-    for name, (x_df, y_df) in {
-        "test": (X, y),
-    }.items():
-        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
-
-    writer.save_dataset_dict()
-
-
-
 DATASET_FUNCTIONS = {
     "mimic": preprocess_mimic,
     "casia": preprocess_casia,
@@ -1104,16 +1014,18 @@ DATASET_FUNCTIONS = {
     "danskcxr": preprocess_danskcxr,
     "reflacx": preprocess_reflacx,
     "danskmri" : preprocess_danskmri,
-    "danskmri_test" : preprocess_danskmri_test,
-    "danskmri_cohort2" : preprocess_danskmri_cohort2,
-    "pmg_cohort2": preprocess_pmg_cohort2,
-
 }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Preprocess datasets (converted from prepare_multilingual.ipynb).")
-    parser.add_argument("-f", "--function", required=True, help=f"One of: {', '.join(DATASET_FUNCTIONS.keys())}")
+    builtin_funcs = ", ".join(sorted(DATASET_FUNCTIONS.keys()))
+    parser.add_argument(
+        "-f",
+        "--function",
+        required=True,
+        help=f"Dataset preprocessor to run (built-ins: {builtin_funcs}). Use --custom-function to add more.",
+    )
     parser.add_argument("-i", "--input-dir", default="/home/alice/work/data", help="Base input directory (dataset dependent).")
     parser.add_argument("-o", "--output-dir", default=None, help="Root directory for outputs (dataset dependent).")
     parser.add_argument(
@@ -1123,8 +1035,15 @@ def main() -> None:
         default=[],
         help="Optional key=value pairs forwarded to the selected function.",
     )
+    parser.add_argument(
+        "--custom-function",
+        action="append",
+        default=[],
+        help="Register additional dataset preprocessors as name=module:function (may be supplied multiple times).",
+    )
     args = parser.parse_args()
 
+    _load_custom_functions(args.custom_function)
     func = DATASET_FUNCTIONS.get(args.function)
     if not func:
         raise ValueError(f"Unknown function '{args.function}'. Options: {list(DATASET_FUNCTIONS.keys())}")

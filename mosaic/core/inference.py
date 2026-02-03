@@ -77,6 +77,7 @@ if __name__ == "__main__":
     argparse.add_argument('-o', '--output_dir', help='Output directory', required=True)
     argparse.add_argument('-pr', '--prompt', help='Path to prompt, stored as a YAML file', required=False, default=None)
     argparse.add_argument('-teds', '--test_dataset_names', help='Dataset name(s)', required=False)
+    argparse.add_argument('--dataset-paths', help='Space-separated HuggingFace dataset directories (bypasses config/datasets.yaml)', required=False, default=None)
     argparse.add_argument('-descr', '--include_description', help='Include description of findings', required=False, default=False)
     argparse.add_argument('-descrlang', '--description_language', help='Language of description of findings', required=False, default='en')
     argparse.add_argument('-c', '--checkpoint', help='Checkpoint path', required=False, default=False)
@@ -106,11 +107,37 @@ if __name__ == "__main__":
         prompt = load_prompt(working_dir, args.prompt)
         print("Loaded prompt config from", args.prompt)
 
-    datasets_names = datasets_names.split()
-    # Convert relative paths to absolute
-    base_path = Path(paths_config['paths']['base'])
-    datasets = [load_from_disk(str(base_path / datasets_yaml[name]['path'])) for name in datasets_names]
-    datasets_classes = [datasets_yaml[name]['classes'] for name in datasets_names]
+    dataset_paths_arg = args.dataset_paths.split() if args.dataset_paths else None
+    dataset_names_arg = args.test_dataset_names.split() if args.test_dataset_names else []
+
+    if dataset_paths_arg:
+        if dataset_names_arg and len(dataset_names_arg) != len(dataset_paths_arg):
+            raise ValueError("When supplying --dataset-paths, provide the same number of --test_dataset_names (or none).")
+        datasets_names = dataset_names_arg or [Path(p).name for p in dataset_paths_arg]
+        datasets = [load_from_disk(p) for p in dataset_paths_arg]
+        datasets_classes = []
+        datasets_findings = []
+        for ds in datasets:
+            if "test" not in ds:
+                raise ValueError("Provided dataset does not contain a 'test' split.")
+            split = ds["test"]
+            sample = split[0] if len(split) else {}
+            sample_classes = sample.get("classes", [])
+            if isinstance(sample_classes, list):
+                datasets_classes.append(sorted({int(v) for v in sample_classes}))
+            else:
+                datasets_classes.append([])
+            sample_findings = sample.get("findings", [])
+            datasets_findings.append(list(sample_findings) if isinstance(sample_findings, list) else [])
+    else:
+        if not dataset_names_arg:
+            raise ValueError("test_dataset_names must be provided when --dataset-paths is not used.")
+        datasets_names = dataset_names_arg
+        base_path = Path(paths_config['paths']['base'])
+        datasets = [load_from_disk(str(base_path / datasets_yaml[name]['path'])) for name in datasets_names]
+        datasets_classes = [datasets_yaml[name]['classes'] for name in datasets_names]
+        datasets_findings = [datasets_yaml[name]['findings'] for name in datasets_names]
+
     print(datasets_names)
     print(datasets)
 
@@ -178,7 +205,7 @@ if __name__ == "__main__":
             max_seq_length = vllm_config["VLLM_KWARGS"]['max_model_len']
             assert max([len(x) for x in tokenized_prompts['input_ids']]) <= max_seq_length, f"Prompts are too long. Max length is {max_seq_length}."
 
-            findings = datasets_yaml[datasets_names[idx]]['findings']
+            findings = datasets_findings[idx]
             classes = datasets_classes[idx]
             empty_json = {f: None for f in findings}  # invalid predictions are None
 
