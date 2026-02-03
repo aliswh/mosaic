@@ -26,6 +26,19 @@ def load_config(working_dir, config_path):
     except Exception as e:
         raise ValueError(f"Error loading config file: {e}")
 
+def load_prompt(working_dir, prompt_path):
+    prompt_yaml = load_config(working_dir, prompt_path)
+    if 'prompt' not in prompt_yaml:
+        raise ValueError(f"Prompt file {prompt_path} does not contain 'prompt' key.")
+    if not isinstance(prompt_yaml['prompt'], str):
+        if isinstance(prompt_yaml['prompt'], list):
+            prompt = ' '.join(prompt_yaml['prompt'])
+        else:
+            raise ValueError(f"Prompt in {prompt_path} must be a string or list of strings.")
+    else:
+        prompt = prompt_yaml['prompt']
+    return prompt
+
 def save_dataset_to_disk(ds, file_path):
     ds.save_to_disk(file_path)
     print(f"Saved dataset (n={len(ds)}) to {file_path}")
@@ -57,40 +70,44 @@ def clean_string(text):
     return cleaned_text
 
 
-def format_report_into_prompt(examples, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en'):
+def format_report_into_prompt(examples, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en', prompt=None):
     """ BATCHED = FALSE!"""
-    report, labels, classes, findings = examples['report'], examples['labels'], examples['classes'], examples['findings']
+    report, classes, findings = examples['report'], examples['classes'], examples['findings']
+    if is_test: labels = ''
+    else: labels = examples['labels']
 
     report = clean_string(report)
 
-    request = [
-        "You are a helpful radiology assistant. ",
-        "Given a radiology report, classify each abnormality into a class. ",
-        "Output a valid JSON with each abnormality as key, and the class as value. ",
-        f"The keys must be {findings}. ",
-        f"The values can be one of {classes}. The values have the following interpretation: ",
-        
-        # positive mentions
-        "(1) the abnormality was positively mentioned in the report; " if 0 in classes 
-        else "(1) the abnormality was mentioned, even with uncertainty, in the report " + \
-        "e.g. 'A large pleural effusion', 'The cardiac contours are stable.', 'The cardiac size cannot be evaluated.'; ",
-        
-        # negative mentions
-        "(2) the abnormality was negatively mentioned in the report; e.g. 'No pneumothorax.'; " if 2 in classes else "", 
-        
-        # uncertain mention
-        "(0) the abnormality was either: mentioned with uncertainty in the report, " + \
-        "or mentioned with ambiguous language in the report and it is unclear " + \
-        "if the pathology exists or not, e.g. Explicit uncertainty: 'The cardiac size cannot be evaluated.', " + \
-        "Ambiguous language: 'The cardiac contours are stable.';" if 0 in classes else "",
-        
-        # no mention
-        " (-1) the abnormality was not mentioned in the report." if 2 in classes 
-        else " (-1) the abnormality was not mentioned in the report, or the abnormality was " + \
-        "negatively mentioned in the report; e.g. 'No pneumothorax.'. ",
-        ]
-
-    request = ''.join(request)
+    if prompt is not None:
+        request = prompt
+    else:
+        request = [
+            "You are a helpful radiology assistant. ",
+            "Given a radiology report, classify each abnormality into a class. ",
+            "Output a valid JSON with each abnormality as key, and the class as value. ",
+            f"The keys must be {findings}. ",
+            f"The values can be one of {classes}. The values have the following interpretation: ",
+            
+            # positive mentions
+            "(1) the abnormality was positively mentioned in the report; " if 0 in classes 
+            else "(1) the abnormality was mentioned, even with uncertainty, in the report " + \
+            "e.g. 'A large pleural effusion', 'The cardiac contours are stable.', 'The cardiac size cannot be evaluated.'; ",
+            
+            # negative mentions
+            "(2) the abnormality was negatively mentioned in the report; e.g. 'No pneumothorax.'; " if 2 in classes else "", 
+            
+            # uncertain mention
+            "(0) the abnormality was either: mentioned with uncertainty in the report, " + \
+            "or mentioned with ambiguous language in the report and it is unclear " + \
+            "if the pathology exists or not, e.g. Explicit uncertainty: 'The cardiac size cannot be evaluated.', " + \
+            "Ambiguous language: 'The cardiac contours are stable.';" if 0 in classes else "",
+            
+            # no mention
+            " (-1) the abnormality was not mentioned in the report." if 2 in classes 
+            else " (-1) the abnormality was not mentioned in the report, or the abnormality was " + \
+            "negatively mentioned in the report; e.g. 'No pneumothorax.'. ",
+            ]
+        request = ''.join(request)
 
     description_tag = f'description_{description_language}'
     if include_description and description_tag in examples:
@@ -105,7 +122,7 @@ def format_report_into_prompt(examples, model_tag, is_test=False, few_shot=False
 
     assistant = {
             "role": "assistant",
-            "content": f"Answer: json {'' if is_test else labels}"
+            "content": f"Answer: json {labels}"
         }
     
     if "llama" in model_tag.lower():
@@ -156,12 +173,12 @@ def apply_chat_template_fn(dataset, apply_template_fn, fn_kwargs={}, model_tag="
     return dataset
 
 
-def process_dataset(dataset, tokenizer, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en'):
+def process_dataset(dataset, tokenizer, model_tag, is_test=False, few_shot=False, include_description=False, description_language='en', prompt=None):
     apply_template_fn = tokenizer.apply_chat_template
     dataset = dataset.map(
         format_report_into_prompt, batched = False, fn_kwargs={
             'model_tag':model_tag, 'is_test':is_test, 'few_shot':few_shot,
-            'include_description':include_description, 'description_language':description_language
+            'include_description':include_description, 'description_language':description_language, 'prompt':prompt
             },
         remove_columns = dataset.column_names
     )
@@ -169,12 +186,12 @@ def process_dataset(dataset, tokenizer, model_tag, is_test=False, few_shot=False
     return dataset
 
 
-def process_dataset_vllm(dataset, llm, model_tag, few_shot=False, include_description=False, description_language='en'):
+def process_dataset_vllm(dataset, llm, model_tag, few_shot=False, include_description=False, description_language='en', prompt=None):
     apply_template_fn = llm.llm_engine.tokenizer.tokenizer.apply_chat_template
     dataset = dataset.map(
         format_report_into_prompt, batched = False, fn_kwargs={
             'model_tag':model_tag, 'is_test':True, 'few_shot': few_shot,
-            'include_description':include_description, 'description_language':description_language
+            'include_description':include_description, 'description_language':description_language, 'prompt':prompt
             },
         remove_columns = dataset.column_names
     )

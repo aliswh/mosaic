@@ -4,6 +4,7 @@ import shutil, argparse
 from mosaic.core.utils import (
     get_working_dir,
     load_config,
+    load_prompt,
     load_dataset,
     process_dataset,
     MinEpochsEarlyStoppingCallback,
@@ -190,6 +191,7 @@ def save_model(model, tokenizer, save_path: str, model_config: dict):
     print(f"Model saved to {save_path}")
     # TODO unsloth doesn't generate the right config for gemma 3 models, so copy (on March 27, 2025) 
     if 'gemma' in model_name:
+        working_dir = get_working_dir()
         working_dir = os.path.dirname(os.path.dirname(working_dir))
         config_path = os.path.join(working_dir, f"/config/gemma/{model_name}/config.json")
         shutil.copy(config_path, save_path)
@@ -237,6 +239,7 @@ if __name__ == "__main__":
     argparse.add_argument('-et', '--experiment_tag', help='Additional information', required=False, default='')
     argparse.add_argument('-tds', '--train_dataset_names', help='Dataset name(s)', required=True)
     argparse.add_argument('-vds', '--valid_dataset_names', help='Dataset name(s)', required=True)
+    argparse.add_argument('-pr', '--prompt', help='Path to prompt, stored as a YAML file', required=False, default=None)
     argparse.add_argument('-c', '--checkpoint', help='Checkpoint path', required=False, default=False)
     argparse.add_argument('-rt', '--resume_training', help='Resume from stopped training', required=False, default=False)
     argparse.add_argument('-cs', '--check_prompts_size', help='Check prompts size', required=False, default=False)
@@ -250,6 +253,10 @@ if __name__ == "__main__":
     peft_config = load_config(working_dir,'peft.yaml')
     sweep_config = load_config(working_dir,'sweep.yaml')
     datasets_config = load_config(working_dir,'datasets.yaml')
+    prompt = args.prompt
+    if prompt:
+        prompt = load_prompt(working_dir, args.prompt)
+        print("Loaded prompt config from", args.prompt)
 
     model_name = args.model_name
     train_dataset_names = args.train_dataset_names
@@ -288,8 +295,8 @@ if __name__ == "__main__":
     train_dataset = load_dataset(train_dataset_names, datasets_config, split='train')
     val_dataset = load_dataset(valid_dataset_names, datasets_config, split='val')
     print(train_dataset_names, train_dataset)
-    train_dataset = process_dataset(train_dataset, tokenizer, model_tag)
-    val_dataset = process_dataset(val_dataset, tokenizer, model_tag)
+    train_dataset = process_dataset(train_dataset, tokenizer, model_tag, prompt=prompt)
+    val_dataset = process_dataset(val_dataset, tokenizer, model_tag, prompt=prompt)
     #print("Training example:\n", train_dataset[0]['text'])
     print(f"N. training: {len(train_dataset)}, n. validation; {len(val_dataset)}")
 
@@ -311,3 +318,9 @@ if __name__ == "__main__":
     
     save_model(trainer.model, tokenizer, models_save_path, model_config) # save merged 16bit
     print(f"Model saved to {models_save_path}")
+
+    if prompt:
+        with open(models_save_path + 'used_prompt.yaml', 'w') as f:
+            import yaml
+            yaml.dump(prompt, f)
+        print("Used prompt saved to ", models_save_path + 'used_prompt.yaml')

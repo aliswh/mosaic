@@ -508,19 +508,19 @@ class _DatasetWriter:
         self,
         name: str,
         X: pd.DataFrame,
-        y: pd.DataFrame,
-        *,
+        y: pd.DataFrame = None,
         index: bool = False,
         classes: Optional[Iterable[int]] = None,
         findings: Optional[Iterable[str]] = None,
         language: Optional[str] = None,
     ) -> Path:
         df = X[["report"]].copy()
-        df["labels"] = y.apply(
-            lambda row: {k: int(v) if pd.notna(v) else -1 for k, v in row.to_dict().items()},
-            axis=1,
-        )
-        df["labels"] = df["labels"].apply(lambda lbl: json.dumps(lbl, sort_keys=True))
+        if isinstance(y, pd.DataFrame):
+            df["labels"] = y.apply(
+                lambda row: {k: int(v) if pd.notna(v) else -1 for k, v in row.to_dict().items()},
+                axis=1,
+            )
+            df["labels"] = df["labels"].apply(lambda lbl: json.dumps(lbl, sort_keys=True))
 
         csv_path = self.write_frame(name, df, index=index)
 
@@ -939,12 +939,16 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
     splitter = _Splitter()
     cleaner = _TextCleaner()
 
-    X = pd.read_csv(base_path / "X.csv")
-    y = pd.read_csv(base_path / "y.csv")
+    X = pd.read_csv(base_path / "X_train.csv")
+    y = pd.read_csv(base_path / "y_train.csv")
     print(y.head())
     y = y.fillna(-1)
 
-    y = y.replace({3:-1, 4:-1, 2:-1})
+    y = y.replace({
+        3:-1, # surgery
+        4:1, # possible 
+        2:-1 # negation
+    })
 
     X = cleaner.clean(X[["text"]], column="text")
     X = X.reset_index(drop=True)
@@ -974,12 +978,122 @@ def preprocess_danskmri(base_path: Path, output_root: Optional[Path] = None, **k
         "val": (X_val, y_val),
         "test": (X_test, y_test),
     }.items():
-        writer.write_report_label_rows(name, x_df, y_df, index=False)
+        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
+
+    writer.save_dataset_dict()
+
+def preprocess_danskmri_test(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
+    base_path = Path(base_path)
+    output_root = Path(output_root) 
+    splitter = _Splitter()
+    cleaner = _TextCleaner()
+
+    X = pd.read_csv(base_path / "X_train.csv")
+    y = pd.read_csv(base_path / "y_train.csv")
+    print(y.head())
+    y = y.fillna(-1)
+
+    y = y.replace({
+        3:-1, # surgery
+        4:1, # possible 
+        2:-1 # negation
+    })
+
+    X = cleaner.clean(X[["text"]], column="text")
+    X = X.reset_index(drop=True)
+    y = y.drop(columns=["Study_Series_ID"])
+    y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
+
+    classes = sorted({int(v) for v in y.stack().unique()})
+    findings = list(y.columns)
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
+
+    print(len(X), len(y))
+
+    for name, df in {
+        "X_test": X,
+        "y_test": y,
+    }.items():
+        writer.write_frame(name, df, index=False)
+
+    for name, (x_df, y_df) in {
+        "test": (X, y),
+    }.items():
+        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
+
+    writer.save_dataset_dict()
+
+def preprocess_danskmri_cohort2(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
+    base_path = Path(base_path)
+    output_root = Path(output_root) 
+    cleaner = _TextCleaner()
+
+    X = pd.read_csv(base_path / "X_cohort2.csv")
+
+    X = cleaner.clean(X[["text"]], column="text")
+    X_test = X.reset_index(drop=True)
+
+    classes = [-1, 1]
+    findings = [
+        'encephalocele',
+        'focal cortical dysplasia',
+        'hypothalamic hamartoma',
+        'hemimegalencephaly',
+        'heterotopia',
+        'lissencephaly',
+        'polymicrogyria',
+        'schizencephaly',
+    ]
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
+
+    for name, x_df in {
+        "test": X_test,
+    }.items():
+        writer.write_report_label_rows(name, x_df, index=False)
 
     writer.save_dataset_dict()
 
 
+def preprocess_pmg_cohort2(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
+    base_path = Path(base_path)
+    output_root = Path(output_root) 
+    splitter = _Splitter()
+    cleaner = _TextCleaner()
 
+    X = pd.read_csv(base_path / "X_pmg_cohort2.csv")
+    y = pd.read_csv(base_path / "y_pmg_cohort2.csv")
+    print(y.head())
+    y = y.fillna(-1)
+
+    y = y.replace({
+        3:-1, # surgery
+        4:1, # possible 
+        2:-1 # negation
+    })
+
+    X = cleaner.clean(X[["text"]], column="text")
+    X = X.reset_index(drop=True)
+    y = y.drop(columns=["Study_Series_ID"])
+    y = y.reindex(sorted(y.columns), axis=1).reset_index(drop=True)
+
+    classes = sorted({int(v) for v in y.stack().unique()})
+    findings = list(y.columns)
+    writer = _DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
+
+    print(len(X), len(y))
+
+    for name, df in {
+        "X_test": X,
+        "y_test": y,
+    }.items():
+        writer.write_frame(name, df, index=False)
+
+    for name, (x_df, y_df) in {
+        "test": (X, y),
+    }.items():
+        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
+
+    writer.save_dataset_dict()
 
 
 
@@ -990,6 +1104,10 @@ DATASET_FUNCTIONS = {
     "danskcxr": preprocess_danskcxr,
     "reflacx": preprocess_reflacx,
     "danskmri" : preprocess_danskmri,
+    "danskmri_test" : preprocess_danskmri_test,
+    "danskmri_cohort2" : preprocess_danskmri_cohort2,
+    "pmg_cohort2": preprocess_pmg_cohort2,
+
 }
 
 
