@@ -28,6 +28,8 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.utils import indexable, _safe_indexing
 from sklearn.utils.validation import _num_samples
 
+from mosaic.core.custom_functions import CUSTOM_DATASET_FUNCTIONS
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -564,12 +566,11 @@ def _register_custom_function(spec: str) -> None:
     if ":" not in target:
         raise ValueError(f"Invalid custom function target '{target}'. Expected format module:function")
     module_name, func_name = target.rsplit(":", 1)
-    module = importlib.import_module(module_name)
-    func = getattr(module, func_name, None)
-    if func is None or not callable(func):
-        raise AttributeError(f"Function '{func_name}' not found or not callable in module '{module_name}'.")
-    DATASET_FUNCTIONS[name] = func  # type: ignore[name-defined]
-    logger.info("Registered custom dataset function '%s' from %s:%s", name, module_name, func_name)
+    # Custom functions are already available via mosaic.core.custom_functions; importing external
+    # modules is no longer supported for security reasons.
+    raise ValueError(
+        "External custom functions are disabled. Please register datasets in mosaic/core/custom_functions.py."
+    )
 
 
 def _load_custom_functions(specs: Iterable[str]) -> None:
