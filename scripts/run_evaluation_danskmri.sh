@@ -7,14 +7,15 @@ cd "$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT:${PYTHONPATH}"
 
 # Default values
-EXP="m" # configuration file for experiment
-MODEL_TAG="medgemma-4b"
+EXP="danskmri" # configuration file for experiment
+MODEL_TAG="mosaic-12b"
 WANDB_PROJECT=None # Set to None to disable wandb logging by default
-TRAIN_DATASETS=("mimic") # A list like ("mimic" "padchest" "casia")
-TEST_DATASETS=("mimic") # A list like ("mimic" "padchest" "casia")
-ZERO_SHOT="off" # "on" or "off"
-OUTPUT_DIR="outputs/eval/${MODEL_TAG}"
+TRAIN_DATASETS=("danskmri_test") # A list like ("mimic" "padchest" "casia")
+TEST_DATASETS=("danskmri_test") # A list like ("mimic" "padchest" "casia")
+ZERO_SHOT="zeroshot" # "off", "zeroshot", "fewshot"
+OUTPUT_DIR="outputs/eval/${MODEL_TAG}_customprompt/danskmri_v2"
 MODEL_PATH="outputs/" # Path to trained model directory
+PROMPT_PATH="prompts/danskmri_v2.yaml" # Path to prompt configuration file
 
 # Help message
 usage() {
@@ -51,13 +52,6 @@ while getopts "e:m:h:p:t:v:z" opt; do
     esac
 done
 
-# Validate experiment type
-valid_exps=("m" "mpe" "mppe" "mppec" "mppecd")
-if [[ ! " ${valid_exps[@]} " =~ " ${EXP} " ]]; then
-    echo "Error: Invalid experiment type '${EXP}'"
-    echo "Valid experiments are: ${valid_exps[*]}"
-    exit 1
-fi
 
 # Check if model path exists
 if [ ! -d "$MODEL_PATH" ]; then
@@ -89,4 +83,6 @@ python -m mosaic.core.inference \
     --project_name "$WANDB_PROJECT" \
     --models_folder "$MODEL_PATH" \
     --output_dir "$OUTPUT_DIR" \
-    --experiment_tag "_$EXP"
+    --experiment_tag "_$EXP" \
+    --prompt "$PROMPT_PATH" \
+    --run_eval

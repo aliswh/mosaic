@@ -7,5 +7,5 @@ TRAINING_LOG_KWARGS:
   load_best_model_at_end: true
   save_total_limit: 1
   save_strategy: steps
-  save_steps: 120
+  save_steps: 100
   #max_steps: 1

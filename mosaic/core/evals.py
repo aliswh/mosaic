@@ -51,7 +51,9 @@ def get_F1_scores(truth, pred):
     per_clss_scores = []
     per_clss_support = []
 
-    for clss in [-1, 0, 1, 2]:
+    unique_classes = np.unique(truth)
+
+    for clss in unique_classes:
         findings, support = one_cls_f1_score(truth, pred, clss=clss)
         findings = pd.DataFrame(findings, index=[clss])
         support = pd.DataFrame(support, index=[clss])

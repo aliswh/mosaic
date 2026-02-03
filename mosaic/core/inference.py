@@ -10,6 +10,7 @@ from mosaic.core.utils import (
     process_dataset_vllm,
     decode_output_vllm,
     load_config,
+    load_prompt,
     get_working_dir,
     normalize_wandb_project_name,
 )
@@ -18,14 +19,13 @@ import wandb
 import argparse, os
 
 # Load configs
-wdir = get_working_dir()
-vllm_config = load_config(wdir, 'vllm')
-paths_config = load_config(wdir, 'paths')
+working_dir = get_working_dir()
+vllm_config = load_config(working_dir, 'vllm')
+paths_config = load_config(working_dir, 'paths')
+datasets_config = load_config(working_dir, 'datasets')
 
-MAX_SEQ_LENGTH = vllm_config['VLLM_KWARGS']['max_model_len']
 
 def model_init(model_tag, is_quantized, load_adapter):
-    vllm_config = load_config(get_working_dir(), 'vllm')
     quantization = {
         'quantization': "bitsandbytes",  # TODO is it different for unsloth dynamic quant?
         'load_format': "bitsandbytes"
@@ -33,8 +33,6 @@ def model_init(model_tag, is_quantized, load_adapter):
 
     # Use max_seq_length from models config
     vllm_kwargs = vllm_config['VLLM_KWARGS'].copy()
-    if isinstance(vllm_kwargs.get('max_model_len'), str) and vllm_kwargs['max_model_len'] == 'MAX_SEQ_LENGTH':
-        vllm_kwargs['max_model_len'] = 2048  # Default value from models.yaml
 
     llm = LLM(
         model_tag, 
@@ -77,11 +75,14 @@ if __name__ == "__main__":
     argparse.add_argument('-tt', '--test_tag', help='Tag to save test results', required=False, default='')
     argparse.add_argument('-d', '--models_folder', help='Where to find models', required=True)
     argparse.add_argument('-o', '--output_dir', help='Output directory', required=True)
+    argparse.add_argument('-pr', '--prompt', help='Path to prompt, stored as a YAML file', required=False, default=None)
     argparse.add_argument('-teds', '--test_dataset_names', help='Dataset name(s)', required=False)
+    argparse.add_argument('--dataset-paths', help='Space-separated HuggingFace dataset directories (bypasses config/datasets.yaml)', required=False, default=None)
     argparse.add_argument('-descr', '--include_description', help='Include description of findings', required=False, default=False)
     argparse.add_argument('-descrlang', '--description_language', help='Language of description of findings', required=False, default='en')
     argparse.add_argument('-c', '--checkpoint', help='Checkpoint path', required=False, default=False)
     argparse.add_argument('-tmp', '--trained_model_path', help='Path to model', required=False, default=False)
+    argparse.add_argument("-re", "--run_eval", help="Use when ground truth labels are available to compute metrics", action="store_true")
 
     args = argparse.parse_args()
 
@@ -96,17 +97,49 @@ if __name__ == "__main__":
     description_language = args.description_language # 'en' or 'da'
     checkpoint = args.checkpoint
     project_name = normalize_wandb_project_name(args.project_name)
+    run_eval = args.run_eval
 
-    wdir = get_working_dir()
-    datasets_yaml = load_config(wdir, 'datasets.yaml')
-    models_yaml = load_config(wdir, 'models.yaml')
+    working_dir = get_working_dir()
+    datasets_yaml = load_config(working_dir, 'datasets.yaml')
+    models_yaml = load_config(working_dir, 'models.yaml')
+    prompt = args.prompt
+    if prompt:
+        prompt = load_prompt(working_dir, args.prompt)
+        print("Loaded prompt config from", args.prompt)
 
-    datasets_names = datasets_names.split()
-    # Convert relative paths to absolute
-    base_path = Path(paths_config['paths']['base'])
-    datasets = [load_from_disk(str(base_path / datasets_yaml[name]['path'])) for name in datasets_names]
-    datasets_classes = [datasets_yaml[name]['classes'] for name in datasets_names]
+    dataset_paths_arg = args.dataset_paths.split() if args.dataset_paths else None
+    dataset_names_arg = args.test_dataset_names.split() if args.test_dataset_names else []
+
+    if dataset_paths_arg:
+        if dataset_names_arg and len(dataset_names_arg) != len(dataset_paths_arg):
+            raise ValueError("When supplying --dataset-paths, provide the same number of --test_dataset_names (or none).")
+        datasets_names = dataset_names_arg or [Path(p).name for p in dataset_paths_arg]
+        datasets = [load_from_disk(p) for p in dataset_paths_arg]
+        datasets_classes = []
+        datasets_findings = []
+        for ds in datasets:
+            if "test" not in ds:
+                raise ValueError("Provided dataset does not contain a 'test' split.")
+            split = ds["test"]
+            sample = split[0] if len(split) else {}
+            sample_classes = sample.get("classes", [])
+            if isinstance(sample_classes, list):
+                datasets_classes.append(sorted({int(v) for v in sample_classes}))
+            else:
+                datasets_classes.append([])
+            sample_findings = sample.get("findings", [])
+            datasets_findings.append(list(sample_findings) if isinstance(sample_findings, list) else [])
+    else:
+        if not dataset_names_arg:
+            raise ValueError("test_dataset_names must be provided when --dataset-paths is not used.")
+        datasets_names = dataset_names_arg
+        base_path = Path(paths_config['paths']['base'])
+        datasets = [load_from_disk(str(base_path / datasets_yaml[name]['path'])) for name in datasets_names]
+        datasets_classes = [datasets_yaml[name]['classes'] for name in datasets_names]
+        datasets_findings = [datasets_yaml[name]['findings'] for name in datasets_names]
+
     print(datasets_names)
+    print(datasets)
 
     model_config = models_yaml[model_name]
     if zeroshot == 'zeroshot':
@@ -153,47 +186,59 @@ if __name__ == "__main__":
             print(f'No test dataset for {datasets_names[idx]}')
             continue
         else:
-            dataset = dataset['test']#.select(range(20))
-            gt = pd.DataFrame([ast.literal_eval(output) for output in dataset['labels']])
+            if run_eval: gt_labels = dataset['test']['labels']
 
-            dataset = process_dataset_vllm(
-                dataset, model, model_config['model_tag'], 
+            text = process_dataset_vllm(
+                dataset['test'], model, model_config['model_tag'], 
                 include_description=include_description, description_language=description_language,
-                few_shot= True if "fewshot" in zeroshot else False
+                few_shot= True if "fewshot" in zeroshot else False,
+                prompt=prompt
             )
-            if 'report' in dataset.features:
-                dataset = dataset['report']
+            if 'report' in text.features:
+                text = text['report']
             else:
-                dataset = dataset['text'] 
-            print(dataset[0])
+                text = text['text'] 
+            print(text[0])
 
             tokenizer = AutoTokenizer.from_pretrained(model_config['model_tag'])
-            tokenized_prompts = tokenizer(dataset)
-            max_seq_length = 2048  # From models.yaml
+            tokenized_prompts = tokenizer(text)
+            max_seq_length = vllm_config["VLLM_KWARGS"]['max_model_len']
             assert max([len(x) for x in tokenized_prompts['input_ids']]) <= max_seq_length, f"Prompts are too long. Max length is {max_seq_length}."
 
-            findings = datasets_yaml[datasets_names[idx]]['findings']
+            findings = datasets_findings[idx]
             classes = datasets_classes[idx]
             empty_json = {f: None for f in findings}  # invalid predictions are None
 
             outputs, n_none = generate_response(
                 model, sampling_params, 
-                dataset, empty_json, classes
+                text, empty_json, classes
                 )
-            output_evals = get_F1_scores(gt, outputs)
-            dataset_name = datasets_names[idx]
-            mean_f1 = np.nanmean(output_evals[2])
-            print(f'Model: {trained_model_tag}, Dataset: {dataset_name}, mean wF1: {mean_f1:.3f}, Invalid answers: {n_none}')
-            if wandb_log:
-                wandb.log({'mean_f1_'+dataset_name:mean_f1, 'invalid_answers':n_none, 'invalid_answers_perc':n_none/len(outputs)*100})
 
+            dataset_name = datasets_names[idx]
             save_path = base_save_path + dataset_name 
             save_path += args.experiment_tag+"/" if args.experiment_tag else "/"
             Path(save_path).mkdir(parents=True, exist_ok=True)
 
-            # save evals to path
-            for e, name in zip(output_evals, ['per_clss_scores', 'per_clss_support', 'weighted']):
-                e.to_csv(save_path + name + '.csv')
             outputs.to_csv(save_path + f'predictions.csv', index=False)
+            print("predictions saved to ", save_path + f'predictions.csv')
 
-    print("Evals saved in ", save_path)
+            if prompt:
+                with open(save_path + 'used_prompt.yaml', 'w') as f:
+                    import yaml
+                    yaml.dump(prompt, f)
+                print("Used prompt saved to ", save_path + 'used_prompt.yaml')
+
+            if run_eval:
+                gt = pd.DataFrame([ast.literal_eval(output) for output in gt_labels])
+                output_evals = get_F1_scores(gt, outputs)
+
+                mean_f1 = np.nanmean(output_evals[2])
+                print(f'Model: {trained_model_tag}, Dataset: {dataset_name}, mean wF1: {mean_f1:.3f}, Invalid answers: {n_none}')
+                if wandb_log:
+                    wandb.log({'mean_f1_'+dataset_name:mean_f1, 'invalid_answers':n_none, 'invalid_answers_perc':n_none/len(outputs)*100})
+
+                # save evals to path
+                for e, name in zip(output_evals, ['per_clss_scores', 'per_clss_support', 'weighted']):
+                    e.to_csv(save_path + name + '.csv')
+        
+                print("Evals saved in ", save_path)

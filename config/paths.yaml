@@ -1,5 +1,5 @@
 paths:
-  base: /home/alice/work/mosaic
+  base: /staff/aliceschiavone/mosaic
   data: data
   output: outputs
   models: models
