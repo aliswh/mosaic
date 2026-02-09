@@ -71,6 +71,49 @@ def mcd_cohort1(base_path: Path, output_root: Optional[Path] = None, **kwargs) -
     writer.save_dataset_dict()
 
 
+def mcd_cohort1_train(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
+    """Prepare the cohort1 train/val/test splits for finetuning."""
+    base_path = Path(base_path)
+    output_root = _require_output_root(output_root)
+    splitter = Splitter()
+
+    reports_file = kwargs.get("reports_file", "X_cohort.csv")
+    labels_file = kwargs.get("labels_file", "y_cohort.csv")
+
+    X = pd.read_csv(base_path / reports_file)
+    y = pd.read_csv(base_path / labels_file)
+
+    X = _prepare_text(X)
+    y = _prepare_labels(y)
+
+    classes = sorted({int(v) for v in y.stack().unique()})
+    findings = list(y.columns)
+    writer = DatasetWriter(output_root, classes=classes, findings=findings, language="Danish")
+
+    X_train, X_val, X_test, y_train, y_val, y_test = splitter.train_val_test(
+        X, y, test_size=0.3, val_size=0.1
+    )
+
+    for name, df in {
+        "X_train": X_train,
+        "X_val": X_val,
+        "X_test": X_test,
+        "y_train": y_train,
+        "y_val": y_val,
+        "y_test": y_test,
+    }.items():
+        writer.write_frame(name, df, index=False)
+
+    for name, (x_df, y_df) in {
+        "train": (X_train, y_train),
+        "val": (X_val, y_val),
+        "test": (X_test, y_test),
+    }.items():
+        writer.write_report_label_rows(name, x_df, y=y_df, index=False)
+
+    writer.save_dataset_dict()
+
+
 def mcd_cohort2(base_path: Path, output_root: Optional[Path] = None, **kwargs) -> None:
     """Prepare the unlabeled cohort2 reports (formerly preprocess_danskmri_cohort2)."""
     base_path = Path(base_path)
@@ -123,6 +166,7 @@ def mcd_cohort2_pmg(base_path: Path, output_root: Optional[Path] = None, **kwarg
 # Copy the dictionary below into mosaic/core/custom_functions.py to register the datasets.
 CUSTOM_DATASET_FUNCTIONS = {
     "mcd_cohort1": mcd_cohort1,
+    "mcd_cohort1_train": mcd_cohort1_train,
     "mcd_cohort2": mcd_cohort2,
     "mcd_cohort2_pmg": mcd_cohort2_pmg,
 }
