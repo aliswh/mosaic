@@ -3,6 +3,12 @@ import wandb
 import shutil, argparse
 from datasets import concatenate_datasets, load_from_disk
 
+# Unsloth should be imported before transformers.
+try:
+    import unsloth  # noqa: F401
+except Exception:
+    unsloth = None
+
 from mosaic.core.utils import (
     get_working_dir,
     load_config,
@@ -25,6 +31,41 @@ def _load_dataset_from_paths(paths_arg: str, split: str):
     if not datasets:
         raise ValueError(f"No dataset paths were provided for split '{split}'.")
     return concatenate_datasets(datasets)
+
+
+def _resolve_gemma_config_path(working_dir: str, model_name: str, model_config: dict) -> str | None:
+    model_tag = str(model_config.get("model_tag", "")).lower()
+    model_family = str(model_config.get("model_family", "")).lower()
+    if "gemma" not in model_family and "gemma" not in model_tag and "mosaic" not in model_tag:
+        return None
+
+    candidates = [model_name]
+    lower_name = model_name.lower()
+    if lower_name.startswith("mosaic-12"):
+        candidates.append("gemma-12b")
+    if lower_name.startswith("mosaic-4"):
+        candidates.append("gemma-4b")
+    if "12b" in lower_name:
+        candidates.append("gemma-12b")
+    if "4b" in lower_name:
+        candidates.append("gemma-4b")
+    if "27b" in lower_name:
+        candidates.append("gemma-27b")
+    if "mosaic-12b" in model_tag:
+        candidates.append("gemma-12b")
+    if "mosaic-4b" in model_tag:
+        candidates.append("gemma-4b")
+
+    working_root = os.path.dirname(os.path.dirname(working_dir))
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        config_path = os.path.join(working_root, "config", "gemma", candidate, "config.json")
+        if os.path.isfile(config_path):
+            return config_path
+    return None
 
 
 def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint: str = None) -> tuple:
@@ -192,7 +233,7 @@ def train_only_on_responses(trainer, model_config):
     return trainer
 
 
-def save_model(model, tokenizer, save_path: str, model_config: dict):
+def save_model(model, tokenizer, save_path: str, model_config: dict, model_name: str, working_dir: str):
     """
     Saves a model to a directory.
 
@@ -204,12 +245,16 @@ def save_model(model, tokenizer, save_path: str, model_config: dict):
     """
     model.save_pretrained_merged(save_path, tokenizer) # vllm doesn't load gemma 3 lora adapters
     print(f"Model saved to {save_path}")
-    # TODO unsloth doesn't generate the right config for gemma 3 models, so copy (on March 27, 2025) 
-    if 'gemma' in model_name:
-        working_dir = get_working_dir()
-        working_dir = os.path.dirname(os.path.dirname(working_dir))
-        config_path = os.path.join(working_dir, f"/config/gemma/{model_name}/config.json")
-        shutil.copy(config_path, save_path)
+    # Unsloth can emit a config that vLLM cannot load for Gemma3 derivatives.
+    gemma_config_path = _resolve_gemma_config_path(working_dir, model_name, model_config)
+    if model_name in {"mosaic-12b", "mosaic-4b"} and not gemma_config_path:
+        raise ValueError(
+            f"Could not resolve Gemma config template for '{model_name}'. "
+            "Expected one under config/gemma/ to support post-training inference."
+        )
+    if gemma_config_path:
+        shutil.copy(gemma_config_path, os.path.join(save_path, "config.json"))
+        print(f"Copied Gemma config template: {gemma_config_path}")
 
 
 def gpu_stats():
@@ -290,8 +335,10 @@ if __name__ == "__main__":
     model_config = model_config[model_name]
     model_tag = model_config['model_tag']
     model_training_config = load_config(working_dir,f'exp/{config_tag}/{model_name}.yaml')
-    if 'gemma' in model_tag:
-        model_config["config_path"] = working_dir + f"/config/gemma/{model_name}/config.json"
+    gemma_config_path = _resolve_gemma_config_path(working_dir, model_name, model_config)
+    if gemma_config_path:
+        model_config["config_path"] = gemma_config_path
+        print("Using Gemma config template:", gemma_config_path)
 
     experiment_name = f"{model_name}_{str(train_dataset_names.replace(' ', '-'))}{args.experiment_tag}"
     if checkpoint: 
@@ -339,7 +386,7 @@ if __name__ == "__main__":
     trainer_stats = trainer.train()
     training_stats(trainer_stats, start_gpu_memory, max_memory)
     
-    save_model(trainer.model, tokenizer, models_save_path, model_config) # save merged 16bit
+    save_model(trainer.model, tokenizer, models_save_path, model_config, model_name, working_dir) # save merged 16bit
     print(f"Model saved to {models_save_path}")
 
     if prompt:
