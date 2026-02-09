@@ -17,6 +17,8 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.utils import indexable, _safe_indexing
 from sklearn.utils.validation import _num_samples
+from itertools import chain
+
 
 logger = logging.getLogger(__name__)
 

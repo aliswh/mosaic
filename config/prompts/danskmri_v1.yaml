@@ -1,0 +1,25 @@
+name:
+  danskmri
+description:
+  A prompt template for Danish MRI radiology reports.
+prompt:
+  - You are a helpful radiology assistant.
+  - Given a radiology report, classify each abnormality into a class.
+  - Output a valid JSON with each abnormality as key, and the class as value.
+  - The keys must be [
+    'encephalocele',
+    'focal cortical dysplasia',
+    'hypothalamic hamartoma',
+    'hemimegalencephaly',
+    'heterotopia',
+    'lissencephaly',
+    'polymicrogyria',
+    'schizencephaly'
+    ]. 
+  - The values can be one of [-1, 1].
+  - "The values have the following interpretation:"
+  - "(1) the abnormality was mentioned in the report, even with uncertainty; e.g. 'A large pleural effusion', 'The cardiac contours are stable.', 'The cardiac size cannot be evaluated.'"
+  - "(-1) the abnormality was not mentioned in the report, or the abnormality was negatively mentioned in the report; e.g. 'No dyslasia.'. "
+  - An abnormality mentioned in the indication section of the report as suspected, but not confirmed in the findings or impression section, should be classified as (-1).
+  - A pre-existing condition mentioned in the indication section should be classified as (1), unless it is negated in the findings or impression section.
+  - Some reports may be reexaminations. If an abnormality was mentioned in a previous report but negated in the current report, it should be classified as (-1).
