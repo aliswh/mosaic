@@ -172,8 +172,9 @@ if __name__ == "__main__":
     base_save_path = output_dir + '/' + trained_model_tag + args.test_tag + '/'
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
+    print(f"Loading inference model from: {trained_model_path}")
     model, sampling_params = model_init(
-        model_config['model_tag'],
+        trained_model_path,
         model_config['load_in_4bit'],
         model_config.get('load_adapter', False)  # Default to False if not specified
         )
