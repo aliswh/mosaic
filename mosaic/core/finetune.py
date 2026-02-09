@@ -1,6 +1,7 @@
 import os
 import wandb
 import shutil, argparse
+from datasets import concatenate_datasets, load_from_disk
 from mosaic.core.utils import (
     get_working_dir,
     load_config,
@@ -10,6 +11,19 @@ from mosaic.core.utils import (
     MinEpochsEarlyStoppingCallback,
     normalize_wandb_project_name,
 )
+
+
+def _load_dataset_from_paths(paths_arg: str, split: str):
+    paths = paths_arg.split()
+    datasets = []
+    for path in paths:
+        dataset = load_from_disk(path)
+        if split not in dataset:
+            raise ValueError(f"Provided dataset at '{path}' does not contain a '{split}' split.")
+        datasets.append(dataset[split])
+    if not datasets:
+        raise ValueError(f"No dataset paths were provided for split '{split}'.")
+    return concatenate_datasets(datasets)
 
 
 def model_init(model_tag: str, model_config: dict, peft_config: dict, checkpoint: str = None) -> tuple:
@@ -239,6 +253,8 @@ if __name__ == "__main__":
     argparse.add_argument('-et', '--experiment_tag', help='Additional information', required=False, default='')
     argparse.add_argument('-tds', '--train_dataset_names', help='Dataset name(s)', required=True)
     argparse.add_argument('-vds', '--valid_dataset_names', help='Dataset name(s)', required=True)
+    argparse.add_argument('--train_dataset_paths', help='Space-separated HuggingFace dataset directories for training (bypasses config/datasets.yaml)', required=False, default=None)
+    argparse.add_argument('--valid_dataset_paths', help='Space-separated HuggingFace dataset directories for validation (bypasses config/datasets.yaml)', required=False, default=None)
     argparse.add_argument('-pr', '--prompt', help='Path to prompt, stored as a YAML file', required=False, default=None)
     argparse.add_argument('-c', '--checkpoint', help='Checkpoint path', required=False, default=False)
     argparse.add_argument('-rt', '--resume_training', help='Resume from stopped training', required=False, default=False)
@@ -292,8 +308,14 @@ if __name__ == "__main__":
 
     model, tokenizer = model_init(model_tag, model_config, peft_config, checkpoint)
 
-    train_dataset = load_dataset(train_dataset_names, datasets_config, split='train')
-    val_dataset = load_dataset(valid_dataset_names, datasets_config, split='val')
+    if args.train_dataset_paths or args.valid_dataset_paths:
+        if not args.train_dataset_paths or not args.valid_dataset_paths:
+            raise ValueError("Provide both --train_dataset_paths and --valid_dataset_paths, or neither.")
+        train_dataset = _load_dataset_from_paths(args.train_dataset_paths, split='train')
+        val_dataset = _load_dataset_from_paths(args.valid_dataset_paths, split='val')
+    else:
+        train_dataset = load_dataset(train_dataset_names, datasets_config, split='train')
+        val_dataset = load_dataset(valid_dataset_names, datasets_config, split='val')
     print(train_dataset_names, train_dataset)
     train_dataset = process_dataset(train_dataset, tokenizer, model_tag, prompt=prompt)
     val_dataset = process_dataset(val_dataset, tokenizer, model_tag, prompt=prompt)
