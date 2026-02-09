@@ -41,7 +41,7 @@ def _prepare_text(df: pd.DataFrame) -> pd.DataFrame:
 
 def _prepare_labels(df: pd.DataFrame) -> pd.DataFrame:
     labels = df.copy()
-    labels = labels.fillna(-1).replace(_LABEL_MAP)
+    labels = labels.fillna(-1)#.replace(_LABEL_MAP)
     labels = labels.drop(columns=["Study_Series_ID"], errors="ignore")
     labels = labels.reindex(sorted(labels.columns), axis=1).reset_index(drop=True)
     return labels
