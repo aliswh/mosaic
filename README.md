@@ -10,6 +10,20 @@ MOSAIC is a framework for efficient radiological report classification that is:
 - 🎯 **Taxonomy-Agnostic**: Adapts to various classification schemes
 - ⚡ **Computationally Efficient**: Optimized for resource usage
 
+You can read the paper [here](https://arxiv.org/abs/2509.04471) and cite it as
+```bibtex
+@inproceedings{schiavone2026mosaic,
+  title={MOSAIC: A Multilingual, Taxonomy-Agnostic, and Computationally Efficient Approach for Radiological Report Classification},
+  author={Schiavone, Alice and Fraccaro, Marco and Pehrson, Lea Marie and Ingala, Silvia and Bonnevie, Rasmus and Nielsen, Michael Bachmann and Beliveau, Vincent and Ganz, Melanie and Elliott, Desmond},
+  booktitle={Proceedings of the 8th Workshop on Clinical Natural Language Processing (Clinical NLP) @ LREC 2026},
+  year={2026},
+  month={may},
+  pages={313--323},
+  publisher={ELRA Language Resources Association},
+  url={https://arxiv.org/abs/2509.04471}
+}
+```
+
 ## What’s in this repo
 - `mosaic/core/finetune.py`: Unsloth + TRL SFT training with optional LoRA, early stopping, and WANDB logging.
 - `mosaic/core/inference.py`: VLLM-based evaluation that scores predictions with weighted F1 and saves CSVs.
@@ -87,22 +101,6 @@ python -m mosaic.core.perplexity \
   --debug True
 ```
 Use `-d sib` for the SIB-200 benchmark. Results are saved as CSVs.
-
-## Citation
-
-If you use MOSAIC in your research, please cite:
-
-```bibtex
-@misc{schiavone2025mosaicmultilingualtaxonomyagnosticcomputationally,
-      title={MOSAIC: A Multilingual, Taxonomy-Agnostic, and Computationally Efficient Approach for Radiological Report Classification}, 
-      author={Alice Schiavone and Marco Fraccaro and Lea Marie Pehrson and Silvia Ingala and Rasmus Bonnevie and Michael Bachmann Nielsen and Vincent Beliveau and Melanie Ganz and Desmond Elliott},
-      year={2025},
-      eprint={2509.04471},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2509.04471}, 
-}
-```
 
 ## License
 
