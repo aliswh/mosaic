@@ -10,7 +10,7 @@ MOSAIC is a framework for efficient radiological report classification that is:
 - 🎯 **Taxonomy-Agnostic**: Adapts to various classification schemes
 - ⚡ **Computationally Efficient**: Optimized for resource usage
 
-You can read the paper [here](https://arxiv.org/abs/2509.04471) and cite it as
+You can [read the paper here]([https://arxiv.org/abs/2509.04471](https://lrec.elra.info/lrec2026-ws-clinicalnlp-35)) and cite it as
 ```bibtex
 @inproceedings{schiavone-etal-2026-mosaic,
   title = {MOSAIC: A Multilingual, Taxonomy-Agnostic, and Computationally Efficient Approach for Radiological Report Classification in Low-Resource Settings },
