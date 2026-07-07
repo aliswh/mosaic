@@ -12,15 +12,18 @@ MOSAIC is a framework for efficient radiological report classification that is:
 
 You can read the paper [here](https://arxiv.org/abs/2509.04471) and cite it as
 ```bibtex
-@inproceedings{schiavone2026mosaic,
-  title={MOSAIC: A Multilingual, Taxonomy-Agnostic, and Computationally Efficient Approach for Radiological Report Classification},
-  author={Schiavone, Alice and Fraccaro, Marco and Pehrson, Lea Marie and Ingala, Silvia and Bonnevie, Rasmus and Nielsen, Michael Bachmann and Beliveau, Vincent and Ganz, Melanie and Elliott, Desmond},
-  booktitle={Proceedings of the 8th Workshop on Clinical Natural Language Processing (Clinical NLP) @ LREC 2026},
-  year={2026},
-  month={may},
-  pages={313--323},
-  publisher={ELRA Language Resources Association},
-  url={https://arxiv.org/abs/2509.04471}
+@inproceedings{schiavone-etal-2026-mosaic,
+  title = {MOSAIC: A Multilingual, Taxonomy-Agnostic, and Computationally Efficient Approach for Radiological Report Classification in Low-Resource Settings },
+  author = {Schiavone, Alice and Fraccaro, Marco and Pehrson, Lea Marie and Ingala, Silvia and Bonnevie, Rasmus and Nielsen, Michael Bachmann and Beliveau, Vincent and Ganz, Melanie and Elliott, Desmond},
+  booktitle = {Proceedings of the 8th Workshop on Clinical Natural Language Processing (Clinical NLP) @ LREC 2026},
+  month = {May},
+  year = {2026},
+  pages = {313--323},
+  address = {Palma, Mallorca, Spain},
+  publisher = {European Language Resources Association (ELRA)},
+  editor = {Ben Abacha, Asma and Bethard, Steven and Bitterman, Danielle and Naumann, Tristan and Roberts, Kirk},
+  doi = {10.63317/3qvne99cm779},
+  abstract = {Radiology reports contain rich clinical information that can be used to train imaging models without relying on costly manual annotation. However, existing approaches face critical limitations: rule-based methods struggle with linguistic variability, supervised models require large annotated datasets, and recent LLM-based systems depend on closed-source or resource-intensive models that are unsuitable for clinical use. Moreover, current solutions are largely restricted to English and single-modality, single-taxonomy datasets. We introduce MOSAIC, a multilingual, taxonomy-agnostic, and computationally efficient approach for radiological report classification. Built on a compact open-access language model (MedGemma-4B), MOSAIC supports both zero-/few-shot prompting and lightweight fine-tuning, enabling deployment on consumer-grade GPUs. We evaluate MOSAIC across seven datasets in English, Spanish, French, and Danish, spanning multiple imaging modalities and label taxonomies. The model achieves a mean macro F1 score of 88 across five chest X-ray datasets, approaching or exceeding expert-level performance, while requiring only 24 GB of GPU memory. With data augmentation, as few as 80 annotated samples are sufficient to reach a weighted F1 score of 82 on Danish reports, enabling large-scale cohort classification with minimal human effort. Code and models are open-source, offering a practical alternative to large or proprietary LLMs in clinical settings.}
 }
 ```
 
